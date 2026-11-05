@@ -1,0 +1,10 @@
+{
+	"id": "sparkle",
+	"name": "Sparkle",
+	"version": "0.1.0",
+	"minAppVersion": "1.7.2",
+	"description": "Capture ideas and tags directly into a chosen note from a side panel.",
+	"author": "hanjianwei",
+	"authorUrl": "https://github.com/hanjianwei",
+	"isDesktopOnly": false
+}
