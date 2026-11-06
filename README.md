@@ -31,7 +31,9 @@ Use the toolbar to add images, locations, or tags. Type `#` for tag completion. 
 
 ## Installation
 
-Place `main.js`, `manifest.json`, and `styles.css` in your vault's `.obsidian/plugins/sparkle/` folder, then enable Sparkle in Community plugins.
+1. Download **sparkle.zip** from [Releases](https://github.com/hanjianwei/obsidian-sparkle/releases) and extract it.
+2. Copy the extracted **sparkle** folder into your vault's `.obsidian/plugins/` directory.
+3. Enable Sparkle in Community plugins.
 
 ## License
 

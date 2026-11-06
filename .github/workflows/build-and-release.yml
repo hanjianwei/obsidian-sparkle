@@ -47,6 +47,15 @@ jobs:
       - name: Build plugin
         run: npm run build
 
+      - name: Package plugin
+        run: |
+          package_dir=$(mktemp -d)
+          mkdir "$package_dir/sparkle"
+          cp main.js manifest.json styles.css LICENSE "$package_dir/sparkle/"
+          cd "$package_dir"
+          zip -qrX sparkle.zip sparkle
+          cp sparkle.zip "$GITHUB_WORKSPACE/sparkle.zip"
+
       - name: Store plugin files
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -55,6 +64,7 @@ jobs:
             main.js
             manifest.json
             styles.css
+            sparkle.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -83,9 +93,9 @@ jobs:
               echo "Release $RELEASE_TAG is already published."
               exit 0
             fi
-            gh release upload "$RELEASE_TAG" release/main.js release/manifest.json release/styles.css --clobber
+            gh release upload "$RELEASE_TAG" release/main.js release/manifest.json release/styles.css release/sparkle.zip --clobber
             gh release edit "$RELEASE_TAG" --draft=false
           else
-            gh release create "$RELEASE_TAG" release/main.js release/manifest.json release/styles.css \
+            gh release create "$RELEASE_TAG" release/main.js release/manifest.json release/styles.css release/sparkle.zip \
               --verify-tag --title "$RELEASE_TAG" --generate-notes
           fi

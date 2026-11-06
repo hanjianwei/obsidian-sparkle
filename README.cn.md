@@ -31,7 +31,9 @@
 
 ## 安装
 
-将 `main.js`、`manifest.json` 和 `styles.css` 放入 vault 的 `.obsidian/plugins/sparkle/` 目录，然后在第三方插件中启用 Sparkle。
+1. 从 [Releases](https://github.com/hanjianwei/obsidian-sparkle/releases) 下载 **sparkle.zip** 并解压。
+2. 将解压得到的 **sparkle** 文件夹复制到 vault 的 `.obsidian/plugins/` 目录。
+3. 在第三方插件中启用 Sparkle。
 
 ## 许可证
 
