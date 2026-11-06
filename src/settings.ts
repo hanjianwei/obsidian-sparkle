@@ -117,12 +117,8 @@ export class SparkleSettingTab extends PluginSettingTab {
 	) {
 		super(app, sparkle);
 	}
-	// Newer hosts can index these definitions; older hosts use display().
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		return settingDefinitions(this.sparkle);
-	}
-	display(): void {
-		renderSettings(this.containerEl, this.sparkle);
 	}
 }
 

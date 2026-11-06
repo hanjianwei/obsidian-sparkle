@@ -1,25 +1,43 @@
 import { describe, expect, it } from 'vitest';
 import { appendEntry, formatEntry, parseTags, readEntries } from '../src/notes';
 
-const now = new Date(2026, 10, 6, 9, 5);
+const now = new Date(2026, 10, 6, 9, 5, 7);
 const entry = formatEntry('第一行\n\n第二行', '#阅读 人物', now);
 
 describe('灵感格式', () => {
 	it('使用本地日期、标签和缩进正文，并保留段落', () => {
 		expect(entry).toBe(
-			'- 2026-11-06 09:05 #阅读 #人物\n    第一行\n    \n    第二行',
+			'- 2026-11-06 09:05:07 #阅读 #人物\n    第一行\n    \n    第二行',
+		);
+	});
+	it('日记模式只记录时分秒，并保留标签和多段正文', () => {
+		expect(formatEntry('第一行\n\n第二行', '#阅读 人物', now, 'daily')).toBe(
+			'- 09:05:07 #阅读 #人物\n    第一行\n    \n    第二行',
+		);
+	});
+	it.each([
+		[new Date(2026, 10, 6, 0, 0, 0), '00:00:00'],
+		[new Date(2026, 10, 6, 23, 59, 59), '23:59:59'],
+	])('日记使用本地时间并保留两位秒数 %s', (date, time) => {
+		expect(formatEntry('日常感想', '', date, 'daily')).toBe(
+			`- ${time}\n    日常感想`,
 		);
 	});
 	it('标签可选，正文中原有的缩进和 Markdown 保留', () => {
 		expect(formatEntry('  保留缩进\n- 列表\n## 标题', '', now)).toBe(
-			'- 2026-11-06 09:05\n      保留缩进\n    - 列表\n    ## 标题',
+			'- 2026-11-06 09:05:07\n      保留缩进\n    - 列表\n    ## 标题',
 		);
 	});
 	it.each(['', ' ', '\n\t'])('拒绝空白正文 %j', (content) => {
 		expect(() => formatEntry(content, '', now)).toThrow('请先写下');
 	});
-	it('兼容从 Windows 粘贴的多行内容', () => {
+	it('规范化从 Windows 粘贴的换行符', () => {
 		expect(formatEntry('甲\r\n乙', '', now)).toContain('    甲\n    乙');
+	});
+	it('整分钟保存时仍输出两位秒数', () => {
+		expect(
+			formatEntry('整分钟的想法', '', new Date(2026, 10, 6, 9, 5)),
+		).toContain('2026-11-06 09:05:00');
 	});
 });
 

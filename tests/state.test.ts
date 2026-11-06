@@ -1,27 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import {
-	DEFAULT_SETTINGS,
+	createDefaultSettings,
 	loadPluginData,
 	normalizeHeading,
 } from '../src/state';
 
-describe('设置加载与兼容', () => {
-	it('没有数据时保持旧版默认标题和追加顺序', () => {
+describe('设置与草稿加载', () => {
+	it('没有数据时使用当前语言的默认标题和追加顺序', () => {
 		expect(loadPluginData(null).settings).toEqual({
 			heading: '灵感',
 			insertionPosition: 'end',
 		});
 	});
-	it('升级时保留旧版的日记模式、目标、正文和标签', () => {
-		const old = {
+	it('恢复日记草稿与当前设置', () => {
+		const saved = {
 			mode: 'daily',
 			targetPath: '书/魔戒.md',
 			content: '没写完的想法',
 			tags: '#阅读',
+			settings: { heading: '每日感想', insertionPosition: 'start' },
 		};
-		const restored = loadPluginData(old);
-		expect(restored.draft).toEqual({ ...old, expanded: true });
-		expect(restored.settings).toEqual(DEFAULT_SETTINGS);
+		const restored = loadPluginData(saved);
+		expect(restored.draft).toEqual({
+			mode: 'daily',
+			targetPath: saved.targetPath,
+			content: saved.content,
+			tags: saved.tags,
+			expanded: true,
+		});
+		expect(restored.settings).toEqual(saved.settings);
 	});
 	it('设置和草稿可以一起保存、恢复', () => {
 		const restored = loadPluginData({
@@ -40,7 +47,7 @@ describe('设置加载与兼容', () => {
 			content: '草稿',
 			settings: { heading: '\n坏标题', insertionPosition: 'invalid' },
 		});
-		expect(restored.settings).toEqual(DEFAULT_SETTINGS);
+		expect(restored.settings).toEqual(createDefaultSettings());
 		expect(restored.draft.content).toBe('草稿');
 	});
 	it('不同插件实例不会共享可变的默认设置', () => {

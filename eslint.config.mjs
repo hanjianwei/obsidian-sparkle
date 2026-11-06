@@ -26,11 +26,6 @@ export default defineConfig(
 	},
 	...obsidianmd.configs.recommended,
 	{
-		files: ['src/i18n/obsidian.ts'],
-		// Keep the storage fallback for Obsidian 1.7.2–1.8.6; newer hosts use getLanguage().
-		rules: { 'obsidianmd/prefer-get-language': 'off' },
-	},
-	{
 		files: ['tests/mocks/obsidian.ts'],
 		// This mock supplies the host runtime; importing from obsidian would recurse.
 		rules: { '@typescript-eslint/no-restricted-imports': 'off' },

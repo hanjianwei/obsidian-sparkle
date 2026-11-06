@@ -122,6 +122,7 @@
 	gap: 7px;
 	min-width: 0;
 	min-height: 30px;
+	height: auto;
 	padding: 5px 8px;
 	border: 1px solid transparent;
 	border-radius: 6px;
@@ -129,6 +130,8 @@
 	box-shadow: none;
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
+	line-height: 1.4;
+	white-space: normal;
 }
 
 .sparkle-panel .sparkle-mode.is-active {
@@ -505,5 +508,287 @@
 @media (pointer: coarse) {
 	.sparkle-tag-suggestions .sparkle-tag-option {
 		min-height: 44px;
+	}
+}
+
+.sparkle-quick-container,
+.sparkle-stream-container {
+	/* Intersect viewport and native insets: Android may report only the inset. */
+	--sparkle-visible-top: max(
+		var(--sparkle-viewport-top, 0px),
+		var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+	);
+	--sparkle-visible-bottom: min(
+		calc(
+			var(--sparkle-viewport-top, 0px) + var(--sparkle-viewport-height, 100dvh)
+		),
+		calc(
+			var(--sparkle-layout-height, 100dvh) -
+				var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+		)
+	);
+	--sparkle-available-height: max(
+		0px,
+		calc(var(--sparkle-visible-bottom) - var(--sparkle-visible-top))
+	);
+}
+
+.sparkle-quick-container {
+	position: fixed;
+	inset: auto;
+	top: var(--sparkle-visible-top);
+	left: var(--sparkle-viewport-left, 0px);
+	width: var(--sparkle-viewport-width, 100%);
+	height: var(--sparkle-available-height);
+	box-sizing: border-box;
+	padding: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.sparkle-stream-container.sparkle-stream {
+	container: sparkle-capture / size;
+	box-sizing: border-box;
+	height: 100%;
+	max-height: max(
+		0px,
+		calc(var(--sparkle-visible-bottom) - var(--sparkle-container-top, 0px))
+	);
+	min-height: 0;
+	padding: 12px;
+	gap: 12px;
+	overflow: hidden;
+}
+
+.sparkle-stream > * {
+	width: 100%;
+	max-width: 760px;
+	margin-inline: auto;
+}
+
+.sparkle-stream .sparkle-header .sparkle-title {
+	font-size: 16px;
+	letter-spacing: 0;
+}
+
+.sparkle-stream .sparkle-subtitle,
+.sparkle-stream .sparkle-target-name,
+.sparkle-stream .sparkle-target .sparkle-label,
+.sparkle-stream .sparkle-target .sparkle-hint,
+.sparkle-stream .sparkle-settings-summary,
+.sparkle-stream .sparkle-composer-header,
+.sparkle-stream .sparkle-records-caption {
+	display: none;
+}
+
+.sparkle-stream .sparkle-target {
+	padding: 0;
+	border: 0;
+	gap: 4px;
+}
+
+.sparkle-stream .sparkle-target-path {
+	margin: 0;
+	font-size: var(--font-ui-small);
+}
+
+.sparkle-stream .sparkle-stream-feed {
+	flex: 1 1 0;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-gutter: stable;
+}
+
+.sparkle-stream .sparkle-records-header {
+	margin-bottom: 12px;
+}
+
+.sparkle-stream .sparkle-preview > ul > li {
+	background: var(--background-secondary);
+	margin-bottom: 12px;
+}
+
+.sparkle-stream .sparkle-composer {
+	flex: 0 1 auto;
+	min-height: 64px;
+	max-height: min(65%, 300px);
+	padding: 10px;
+	gap: 6px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.sparkle-stream .sparkle-editor {
+	height: 64px;
+	min-height: 44px;
+	max-height: 160px;
+	font-size: 16px;
+}
+
+.sparkle-stream .sparkle-composer-footer {
+	position: sticky;
+	bottom: -10px;
+	flex-wrap: nowrap;
+	flex-shrink: 0;
+	padding: 4px 0;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.sparkle-stream .sparkle-actions {
+	margin-inline-start: auto;
+}
+
+.sparkle-stream .sparkle-status,
+.sparkle-quick .sparkle-status {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	background: transparent;
+}
+
+@container sparkle-capture (max-height: 400px) {
+	.sparkle-stream .sparkle-header,
+	.sparkle-stream .sparkle-destination {
+		display: none;
+	}
+	.sparkle-stream .sparkle-editor {
+		height: 48px;
+	}
+}
+
+@container sparkle-capture (max-height: 280px) {
+	.sparkle-stream .sparkle-composer {
+		padding: 0;
+	}
+	.sparkle-stream .sparkle-composer-footer {
+		bottom: 0;
+	}
+}
+
+@container sparkle-capture (max-height: 220px) {
+	.sparkle-stream .sparkle-target,
+	.sparkle-stream .sparkle-stream-feed {
+		display: none;
+	}
+	.sparkle-stream .sparkle-composer {
+		flex: 1 1 auto;
+		min-height: 0;
+		max-height: 100%;
+	}
+}
+
+.sparkle-quick-container .sparkle-quick-modal {
+	position: relative;
+	inset: auto;
+	transform: none;
+	margin: 0;
+	min-width: 0;
+	min-height: 0;
+	width: min(480px, 100%);
+	max-width: 100%;
+	max-height: 100%;
+	height: auto;
+	box-sizing: border-box;
+	padding: clamp(8px, calc(var(--sparkle-available-height) * 0.04), 20px);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.sparkle-quick-modal .modal-title {
+	flex-shrink: 0;
+	margin-bottom: 12px;
+}
+
+.sparkle-quick-modal .modal-content {
+	flex: 1 1 auto;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.sparkle-quick-modal .sparkle-quick-actions {
+	flex: 0 0 auto;
+	min-height: 0;
+	padding: 0;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.sparkle-panel.sparkle-quick {
+	padding: 0;
+	gap: 8px;
+}
+
+.sparkle-quick .sparkle-target {
+	padding: 0;
+	gap: 4px;
+	border: 0;
+}
+
+.sparkle-quick .sparkle-target .sparkle-label,
+.sparkle-quick .sparkle-target-name,
+.sparkle-quick .sparkle-target .sparkle-hint,
+.sparkle-quick .sparkle-settings-summary {
+	display: none;
+}
+
+.sparkle-quick .sparkle-target-path {
+	margin: 0;
+	font-size: var(--font-ui-small);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.sparkle-quick .sparkle-target-path.is-error {
+	color: var(--text-error);
+	white-space: normal;
+}
+
+.sparkle-quick .sparkle-composer {
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+}
+
+.sparkle-quick .sparkle-composer-header {
+	display: none;
+}
+
+.sparkle-quick .sparkle-editor {
+	height: clamp(
+		64px,
+		calc(var(--sparkle-available-height, 100dvh) - 200px),
+		160px
+	);
+	min-height: 64px;
+	font-size: 16px;
+}
+
+.sparkle-quick .sparkle-composer-footer {
+	flex-wrap: nowrap;
+	flex-shrink: 0;
+	padding: 8px 0;
+	background: var(--background-primary);
+}
+
+@media (pointer: coarse) {
+	.sparkle-quick button,
+	.sparkle-stream button {
+		min-height: 44px;
+	}
+
+	.sparkle-quick .sparkle-icon-button,
+	.sparkle-stream .sparkle-icon-button {
+		width: 44px;
 	}
 }

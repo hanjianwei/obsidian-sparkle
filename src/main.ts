@@ -1,9 +1,15 @@
 import { setLocale, t } from './i18n';
-import { getAppLanguage } from './i18n/obsidian';
-import { Notice, Plugin, TFile } from 'obsidian';
+import { getLanguage, Notice, Plugin, TFile } from 'obsidian';
 import { SparkleView, VIEW_TYPE_SPARKLE } from './views/sparkle-view';
 import { SparkleSettingTab } from './settings';
-import { loadPluginData, normalizeHeading, SparkleSettings } from './state';
+import {
+	hasDraft,
+	loadPluginData,
+	normalizeHeading,
+	SparkleSettings,
+} from './state';
+import { QuickCaptureModal } from './views/quick-capture';
+import { CaptureView, VIEW_TYPE_CAPTURE } from './views/capture-view';
 
 export default class SparklePlugin extends Plugin {
 	capturePending = false;
@@ -11,16 +17,34 @@ export default class SparklePlugin extends Plugin {
 	settings = loadPluginData(null).settings;
 	private saveRequested = false;
 	private savePromise: Promise<void> | null = null;
+	private quickCapture: QuickCaptureModal | null = null;
+	private captureOpening: Promise<void> | null = null;
 
 	async onload(): Promise<void> {
-		setLocale(getAppLanguage());
-		const data = loadPluginData(await this.loadData(), t('defaultHeading'));
+		setLocale(getLanguage());
+		const data = loadPluginData(await this.loadData());
 		this.draft = data.draft;
 		this.settings = data.settings;
 		this.addSettingTab(new SparkleSettingTab(this.app, this));
 
 		this.registerView(VIEW_TYPE_SPARKLE, (leaf) => new SparkleView(leaf, this));
-		this.addRibbonIcon('sparkles', t('openPanel'), () => this.openPanel());
+		this.registerView(VIEW_TYPE_CAPTURE, (leaf) => new CaptureView(leaf, this));
+		this.addRibbonIcon('sparkles', t('quickCapture'), () =>
+			this.openQuickCapture(),
+		);
+		this.addCommand({
+			id: 'quick-capture',
+			name: t('quickCapture'),
+			icon: 'sparkles',
+			callback: () => this.openQuickCapture(),
+		});
+		this.register(() => this.quickCapture?.close());
+		this.addCommand({
+			id: 'continuous-capture',
+			name: t('continuousCapture'),
+			icon: 'messages-square',
+			callback: () => this.openContinuousCapture(),
+		});
 
 		this.addCommand({
 			id: 'open-panel',
@@ -29,14 +53,39 @@ export default class SparklePlugin extends Plugin {
 		});
 	}
 
+	openContinuousCapture(): Promise<void> {
+		this.captureOpening ??= this.revealCapturePage().finally(() => {
+			this.captureOpening = null;
+		});
+		return this.captureOpening;
+	}
+
+	private async revealCapturePage(): Promise<void> {
+		try {
+			if (this.capturePending) {
+				new Notice(t('captureBusy'));
+				return;
+			}
+			let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_CAPTURE)[0];
+			// Capture the Markdown destination before the capture tab becomes active.
+			if (!leaf || this.app.workspace.getActiveFile())
+				this.prepareCurrentNote();
+			this.draft.expanded = true;
+			if (!leaf) {
+				leaf = this.app.workspace.getLeaf('tab');
+				await leaf.setViewState({ type: VIEW_TYPE_CAPTURE, active: true });
+			}
+			await this.app.workspace.revealLeaf(leaf);
+			if (leaf.view instanceof CaptureView) leaf.view.focusCapture();
+		} catch (error) {
+			console.error('Sparkle: Failed to open continuous capture', error);
+			new Notice(t('openCaptureError'));
+		}
+	}
+
 	async openPanel(): Promise<void> {
 		try {
-			if (!this.draft.targetPath) {
-				const file = this.app.workspace.getActiveFile();
-				if (file instanceof TFile && file.extension === 'md') {
-					this.draft.targetPath = file.path;
-				}
-			}
+			this.prepareCurrentNote();
 			let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_SPARKLE)[0];
 			if (!leaf) {
 				const rightLeaf = this.app.workspace.getRightLeaf(false);
@@ -45,10 +94,62 @@ export default class SparklePlugin extends Plugin {
 				await leaf.setViewState({ type: VIEW_TYPE_SPARKLE, active: true });
 			}
 			await this.app.workspace.revealLeaf(leaf);
+			if (leaf.view instanceof SparkleView) leaf.view.focusCapture();
 		} catch (error) {
 			console.error('Sparkle: Failed to open panel', error);
 			new Notice(t('openPanelError'));
 		}
+	}
+
+	openQuickCapture(): void {
+		if (this.capturePending) {
+			new Notice(t('captureBusy'));
+			return;
+		}
+		if (this.quickCapture) {
+			this.quickCapture.focusCapture();
+			return;
+		}
+		this.prepareCurrentNote();
+		this.draft.expanded = true;
+		this.quickCapture = new QuickCaptureModal(this.app, this, () => {
+			this.quickCapture = null;
+		});
+		this.quickCapture.open();
+	}
+
+	private prepareCurrentNote(): void {
+		if (this.draft.mode !== 'file' || hasDraft(this.draft)) return;
+		const file = this.getCaptureFile();
+		this.draft.targetPath = file?.extension === 'md' ? file.path : '';
+	}
+
+	getCaptureFile(): TFile | null {
+		const active = this.app.workspace.getActiveFile();
+		if (active) return active.extension === 'md' ? active : null;
+		// A capture tab has no file of its own; keep the note it was opened from.
+		if (this.app.workspace.getActiveViewOfType(CaptureView)) {
+			const file = this.app.vault.getAbstractFileByPath(this.draft.targetPath);
+			if (file instanceof TFile && file.extension === 'md') return file;
+		}
+		return null;
+	}
+
+	syncPanels(): void {
+		for (const view of this.captureViews()) view.syncDraft();
+	}
+
+	private captureViews(): Array<SparkleView | CaptureView> {
+		const leaves = new Set([
+			...this.app.workspace.getLeavesOfType(VIEW_TYPE_SPARKLE),
+			...this.app.workspace.getLeavesOfType(VIEW_TYPE_CAPTURE),
+		]);
+		return [...leaves]
+			.map((leaf) => leaf.view)
+			.filter(
+				(view): view is SparkleView | CaptureView =>
+					view instanceof SparkleView || view instanceof CaptureView,
+			);
 	}
 
 	// Coalesce typing updates and serialize writes so older drafts cannot win.
@@ -71,9 +172,8 @@ export default class SparklePlugin extends Plugin {
 			if (this.settings === next) this.settings = previous;
 			throw error;
 		}
-		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_SPARKLE)) {
-			if (leaf.view instanceof SparkleView) leaf.view.onSettingsChanged();
-		}
+		for (const view of this.captureViews()) view.onSettingsChanged();
+		this.quickCapture?.onSettingsChanged();
 	}
 
 	private async writeDraft(): Promise<void> {

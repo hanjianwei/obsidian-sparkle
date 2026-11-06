@@ -103,7 +103,15 @@ export class TagSuggest extends Component {
 			doc,
 			'scroll',
 			(event) => {
-				if (event.target !== this.popup) this.close();
+				if (event.target === this.popup) return;
+				const scroller =
+					this.input.closest('.sparkle-stream .sparkle-composer') ??
+					(this.input.closest('.sparkle-quick-modal')
+						? this.input.closest('.modal-content')
+						: null);
+				if (scroller && event.target === scroller) {
+					if (!this.popup.hidden) this.position();
+				} else this.close();
 			},
 			true,
 		);
@@ -120,6 +128,14 @@ export class TagSuggest extends Component {
 				viewport.removeEventListener('resize', reposition);
 				viewport.removeEventListener('scroll', reposition);
 			});
+		}
+		const boundary =
+			this.input.closest('.sparkle-quick-modal')?.parentElement ??
+			this.input.closest('.sparkle-stream');
+		if (boundary) {
+			const observer = new ResizeObserver(reposition);
+			observer.observe(boundary);
+			this.register(() => observer.disconnect());
 		}
 	}
 
@@ -191,10 +207,34 @@ export class TagSuggest extends Component {
 		const rect = this.input.getBoundingClientRect();
 		const win = this.input.ownerDocument.defaultView;
 		const viewport = win?.visualViewport;
-		const left = viewport?.offsetLeft ?? 0;
-		const top = viewport?.offsetTop ?? 0;
-		const width = viewport?.width ?? win?.innerWidth ?? 320;
-		const height = viewport?.height ?? win?.innerHeight ?? 480;
+		const boundary = this.input
+			.closest('.sparkle-quick-container, .sparkle-stream-container')
+			?.getBoundingClientRect();
+		const left = Math.max(viewport?.offsetLeft ?? 0, boundary?.left ?? 0);
+		const top = Math.max(viewport?.offsetTop ?? 0, boundary?.top ?? 0);
+		const right = Math.min(
+			(viewport?.offsetLeft ?? 0) + (viewport?.width ?? win?.innerWidth ?? 320),
+			boundary?.right ?? Infinity,
+		);
+		const bottom = Math.min(
+			(viewport?.offsetTop ?? 0) +
+				(viewport?.height ?? win?.innerHeight ?? 480),
+			boundary?.bottom ?? Infinity,
+		);
+		const width = right - left;
+		const height = bottom - top;
+		const content = this.input
+			.closest(
+				'.sparkle-quick-modal .modal-content, .sparkle-stream .sparkle-composer',
+			)
+			?.getBoundingClientRect();
+		if (
+			rect.bottom <= Math.max(top, content?.top ?? top) ||
+			rect.top >= Math.min(bottom, content?.bottom ?? bottom)
+		) {
+			this.close();
+			return;
+		}
 		const popupWidth = Math.min(Math.max(rect.width, 200), width - 16);
 		const below = top + height - rect.bottom - 8;
 		const above = rect.top - top - 8;

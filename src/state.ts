@@ -12,10 +12,15 @@ export interface SparkleDraft {
 	expanded: boolean;
 }
 
-export const DEFAULT_SETTINGS: Readonly<SparkleSettings> = {
-	heading: '灵感',
-	insertionPosition: 'end',
-};
+export function hasDraft(
+	draft: Pick<SparkleDraft, 'content' | 'tags'>,
+): boolean {
+	return Boolean(draft.content.trim() || draft.tags.trim());
+}
+
+export function createDefaultSettings(): SparkleSettings {
+	return { heading: t('defaultHeading'), insertionPosition: 'end' };
+}
 
 export function normalizeHeading(value: string): string {
 	if ([...value].some((character) => character.charCodeAt(0) < 32)) {
@@ -30,10 +35,7 @@ export function normalizeHeading(value: string): string {
 	return heading;
 }
 
-export function loadPluginData(
-	value: unknown,
-	initialHeading = DEFAULT_SETTINGS.heading,
-): {
+export function loadPluginData(value: unknown): {
 	draft: SparkleDraft;
 	settings: SparkleSettings;
 } {
@@ -44,12 +46,9 @@ export function loadPluginData(
 		tags: '',
 		expanded: false,
 	};
-	const settings = { ...DEFAULT_SETTINGS };
-	// Localize only first-install defaults. Never change an existing note destination.
-	if (value == null) settings.heading = normalizeHeading(initialHeading);
+	const settings = createDefaultSettings();
 	if (!value || typeof value !== 'object') return { draft, settings };
 	const data = value as Record<string, unknown>;
-	// Earlier releases stored draft fields directly at the top level.
 	for (const key of ['targetPath', 'content', 'tags'] as const) {
 		if (typeof data[key] === 'string') draft[key] = data[key];
 	}

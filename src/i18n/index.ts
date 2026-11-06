@@ -30,7 +30,7 @@ export function t<Key extends TranslationKey>(
 	key: Key,
 	...args: Arguments<Key>
 ): string {
-	const message = locale === 'zh' ? zh[key] || en[key] : en[key];
+	const message = locale === 'zh' ? zh[key] : en[key];
 	const parameters = args[0] as Record<string, string | number> | undefined;
 	return message.replace(/\{(\w+)\}/g, (placeholder: string, name: string) =>
 		parameters?.[name] === undefined ? placeholder : String(parameters[name]),

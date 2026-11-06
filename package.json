@@ -2,7 +2,7 @@
 	"name": "obsidian-sparkle",
 	"version": "0.1.0",
 	"private": true,
-	"description": "Capture ideas and tags directly into a chosen note from a side panel.",
+	"description": "Capture ideas into your current note or daily note with quick or continuous capture.",
 	"type": "module",
 	"main": "main.js",
 	"scripts": {

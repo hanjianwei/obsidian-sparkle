@@ -7,6 +7,18 @@ export interface TagQuery {
 export type TagInputMode = 'content' | 'tags';
 const SEPARATOR = /[\s,，]/u;
 
+/** Append picker selections or a draft's separate tags without changing its text. */
+export function appendInlineTags(content: string, tags: string): string {
+	const labels = tags
+		.split(/[\s,，]+/u)
+		.filter(Boolean)
+		.map((tag) => `#${tag.replace(/^#/, '')}`)
+		.join(' ');
+	if (!labels) return content;
+	const separator = content && !/\s$/u.test(content) ? ' ' : '';
+	return `${content}${separator}${labels} `;
+}
+
 export function getTagQuery(
 	value: string,
 	caret: number,

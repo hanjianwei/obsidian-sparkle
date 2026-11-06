@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { completeTag, getTagQuery, suggestTags, TagQuery } from '../src/tags';
+import {
+	appendInlineTags,
+	completeTag,
+	getTagQuery,
+	suggestTags,
+	TagQuery,
+} from '../src/tags';
+
+describe('正文末尾插入标签', () => {
+	it.each([
+		['', '#reading', '#reading '],
+		['一条想法', '#阅读/人物', '一条想法 #阅读/人物 '],
+		['已有空格 ', 'work', '已有空格 #work '],
+		['第一行\n第二行\n', '#写作', '第一行\n第二行\n#写作 '],
+		[
+			'原草稿',
+			'阅读, #work，reading/people',
+			'原草稿 #阅读 #work #reading/people ',
+		],
+		['正文\n', '  ,， ', '正文\n'],
+		['原文 #已有', 'bad!tag', '原文 #已有 #bad!tag '],
+	])('保留正文并正确分隔标签：%j + %j', (content, tags, expected) => {
+		expect(appendInlineTags(content, tags)).toBe(expected);
+	});
+});
 
 function context(
 	value: string,

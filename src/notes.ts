@@ -1,5 +1,9 @@
 import { t } from './i18n';
-import { DEFAULT_SETTINGS, normalizeHeading, SparkleSettings } from './state';
+import {
+	createDefaultSettings,
+	normalizeHeading,
+	SparkleSettings,
+} from './state';
 
 interface Heading {
 	level: number;
@@ -105,10 +109,19 @@ export function parseTags(value: string): string[] {
 	return [...result.values()];
 }
 
-export function formatEntry(content: string, tags: string, now: Date): string {
+export function formatEntry(
+	content: string,
+	tags: string,
+	now: Date,
+	mode: 'file' | 'daily' = 'file',
+): string {
 	if (!content.trim()) throw new Error(t('contentRequired'));
 	const pad = (value: number): string => String(value).padStart(2, '0');
-	const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+	const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+	const timestamp =
+		mode === 'daily'
+			? time
+			: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${time}`;
 	const labels = parseTags(tags);
 	const body = content.replace(/\r\n?/g, '\n').replace(/^\n+|\n+$/g, '');
 	return [
@@ -120,7 +133,7 @@ export function formatEntry(content: string, tags: string, now: Date): string {
 export function appendEntry(
 	source: string,
 	entry: string,
-	settings: Readonly<SparkleSettings> = DEFAULT_SETTINGS,
+	settings: Readonly<SparkleSettings> = createDefaultSettings(),
 ): string {
 	const heading = normalizeHeading(settings.heading);
 	const section = sectionIn(source, heading);
@@ -160,7 +173,7 @@ export function appendEntry(
 
 export function readEntries(
 	source: string,
-	heading: string = DEFAULT_SETTINGS.heading,
+	heading: string = createDefaultSettings().heading,
 ): string {
 	const section = sectionIn(source, normalizeHeading(heading));
 	return section ? source.slice(section.start, section.end).trim() : '';
