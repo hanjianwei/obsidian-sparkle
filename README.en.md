@@ -65,6 +65,7 @@ npm install
 npm run dev
 npm run lint
 npm run format:check
+npm run release:check
 npm test
 npm run build
 ```
@@ -72,3 +73,27 @@ npm run build
 Copy `main.js`, `manifest.json`, and `styles.css` to a development vault's `.obsidian/plugins/sparkle/` directory. Enable Sparkle, and reload it after copying new builds.
 
 Translations live in `src/i18n/en.ts` and `src/i18n/zh.ts`. Add matching keys and placeholders to both catalogs; TypeScript checks translation keys and interpolation parameters. Tests cover locale selection, catalog consistency, validation messages, and preservation of stored content.
+
+`release:check` validates the package, lockfile, manifest, and version mapping. `npm test` also verifies version synchronization, tag creation, and rejection of mismatched versions in temporary Git repositories.
+
+## Automated releases
+
+GitHub Actions runs version validation, linting, formatting checks, tests, and a production build on pushes to `main`, pull requests, and manual runs. It stores the three plugin files as build artifacts. Pushing a version tag runs the same checks, then creates a GitHub Release with generated notes and attaches `main.js`, `manifest.json`, and `styles.css`.
+
+Commit your code and workflow configuration first. From a clean working tree, set and push a new version:
+
+```sh
+npm version 0.2.0
+git push origin main --follow-tags
+```
+
+You can also use `npm version patch`, `minor`, or `major`. The version hook updates `package.json`, `package-lock.json`, `manifest.json`, and `versions.json`, and creates a version commit and matching tag. Tags use the exact plugin version, such as `0.2.0`; the project's `.npmrc` configures an empty tag prefix.
+
+To publish the existing `0.1.0` version for the first time:
+
+```sh
+git tag 0.1.0
+git push origin main 0.1.0
+```
+
+The release job uses GitHub's automatic `GITHUB_TOKEN` with `contents: write`; no personal access token is needed. Reruns preserve published releases and resume asset uploads for unfinished drafts.

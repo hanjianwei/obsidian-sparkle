@@ -101,11 +101,14 @@ npm run dev
 ```sh
 npm run lint
 npm run format:check
+npm run release:check
 npm test
 npm run build
 ```
 
 `build` 执行 TypeScript 类型检查并生成压缩的 CommonJS 插件。Vitest 测试覆盖内容格式、标签校验、自定义标题、首尾插入、原文保留、设置恢复和日记目标解析；日记接口使用 mock，实际 Obsidian 集成仍需手动验证。
+
+`release:check` 校验包、锁文件、插件清单和版本映射是否一致。`npm test` 还会在临时 Git 仓库中验证版本同步、标签生成和版本不一致时的阻断行为。
 
 手动检查：当前笔记与日记两种模式、切换页面后开始新记录、已有/未创建的日记、自定义目录和模板、多行内容与标签、输入中目标固定、草稿恢复、文件重命名/删除，以及反复启用/禁用插件。移动端需在实际设备中验证。
 
@@ -124,4 +127,24 @@ npm run build
 - `manifest.json` / `versions.json`：插件元数据和最低 Obsidian 版本。
 - `styles.css`：面板样式，跟随 Obsidian 主题。
 
-发布时同步更新 `package.json`、`manifest.json` 和 `versions.json`。发布标签应与插件版本一致，并附上 `main.js`、`manifest.json` 及 `styles.css`。
+## 自动构建与发布
+
+GitHub Actions 在推送 `main`、提交 PR 或手动触发时执行版本校验、代码与格式检查、测试和生产构建，并保存 `main.js`、`manifest.json`、`styles.css` 构建产物。推送版本标签时，通过相同检查后自动创建 GitHub Release、生成发布说明并上传这三个文件。
+
+先提交要发布的代码和工作流配置，在干净的工作区设置新版本：
+
+```sh
+npm version 0.2.0
+git push origin main --follow-tags
+```
+
+也可以使用 `npm version patch`、`minor` 或 `major`。版本钩子会同步更新 `package.json`、`package-lock.json`、`manifest.json` 和 `versions.json`，创建版本提交和同名标签。标签采用 `0.2.0` 格式，与插件版本完全相同；项目的 `.npmrc` 已配置为空前缀。
+
+首次发布现有的 `0.1.0` 时，可直接创建标签并推送：
+
+```sh
+git tag 0.1.0
+git push origin main 0.1.0
+```
+
+发布任务使用 GitHub 自动提供的 `GITHUB_TOKEN`，只在发布任务中申请 `contents: write`，无需配置个人访问令牌。已发布版本在重跑时保留；失败后遗留的草稿会继续上传并发布。

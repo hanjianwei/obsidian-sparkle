@@ -9,6 +9,8 @@ export default defineConfig(
 		'esbuild.config.mjs',
 		'eslint.config.mjs',
 		'vitest.config.mjs',
+		'scripts/version.mjs',
+		'scripts/release.test.mjs',
 		'package.json',
 		'package-lock.json',
 		'tsconfig.json',

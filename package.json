@@ -11,7 +11,10 @@
 		"lint": "eslint .",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"test": "vitest run"
+		"test": "vitest run && npm run test:release",
+		"test:release": "node --test scripts/release.test.mjs",
+		"release:check": "node scripts/version.mjs check",
+		"version": "node scripts/version.mjs sync && git add manifest.json versions.json"
 	},
 	"devDependencies": {
 		"@types/node": "^22.15.17",
