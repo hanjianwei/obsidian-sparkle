@@ -2,6 +2,8 @@ import { t } from './i18n';
 export interface SparkleSettings {
 	heading: string;
 	insertionPosition: 'start' | 'end';
+	noteImageFolder: string;
+	dailyImageFolder: string;
 }
 
 export interface SparkleDraft {
@@ -9,17 +11,42 @@ export interface SparkleDraft {
 	targetPath: string;
 	content: string;
 	tags: string;
+	images: string[];
 	expanded: boolean;
 }
 
 export function hasDraft(
-	draft: Pick<SparkleDraft, 'content' | 'tags'>,
+	draft: Pick<SparkleDraft, 'content' | 'tags' | 'images'>,
 ): boolean {
-	return Boolean(draft.content.trim() || draft.tags.trim());
+	return Boolean(
+		draft.content.trim() || draft.tags.trim() || draft.images.length,
+	);
 }
 
 export function createDefaultSettings(): SparkleSettings {
-	return { heading: t('defaultHeading'), insertionPosition: 'end' };
+	return {
+		heading: t('defaultHeading'),
+		insertionPosition: 'end',
+		noteImageFolder: 'assets',
+		dailyImageFolder: 'assets/{date}',
+	};
+}
+
+export function normalizeImageFolder(value: string): string {
+	const folder = value
+		.trim()
+		.replace(/\\/gu, '/')
+		.replace(/\/{2,}/gu, '/');
+	const literal = folder.replaceAll('{date}', '');
+	if (
+		!folder ||
+		[...literal].some((character) => character.charCodeAt(0) < 32) ||
+		/[:*?"<>|{}]/u.test(literal) ||
+		folder.split('/').includes('..')
+	) {
+		throw new Error(t('imageFolderInvalid', { placeholder: '{date}' }));
+	}
+	return folder === '/' ? folder : folder.replace(/\/$/u, '');
 }
 
 export function normalizeHeading(value: string): string {
@@ -44,6 +71,7 @@ export function loadPluginData(value: unknown): {
 		targetPath: '',
 		content: '',
 		tags: '',
+		images: [],
 		expanded: false,
 	};
 	const settings = createDefaultSettings();
@@ -53,7 +81,11 @@ export function loadPluginData(value: unknown): {
 		if (typeof data[key] === 'string') draft[key] = data[key];
 	}
 	if (data.mode === 'daily') draft.mode = 'daily';
-	draft.expanded = Boolean(draft.content || draft.tags);
+	if (Array.isArray(data.images))
+		draft.images = data.images.filter(
+			(path): path is string => typeof path === 'string' && Boolean(path),
+		);
+	draft.expanded = hasDraft(draft);
 	if (data.settings && typeof data.settings === 'object') {
 		const saved = data.settings as Record<string, unknown>;
 		if (typeof saved.heading === 'string') {
@@ -65,6 +97,15 @@ export function loadPluginData(value: unknown): {
 		}
 		if (saved.insertionPosition === 'start')
 			settings.insertionPosition = 'start';
+		for (const key of ['noteImageFolder', 'dailyImageFolder'] as const) {
+			if (typeof saved[key] === 'string') {
+				try {
+					settings[key] = normalizeImageFolder(saved[key]);
+				} catch {
+					/* Keep the default for invalid stored paths. */
+				}
+			}
+		}
 	}
 	return { draft, settings };
 }

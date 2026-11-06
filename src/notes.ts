@@ -133,7 +133,9 @@ export function formatEntry(
 export function appendEntry(
 	source: string,
 	entry: string,
-	settings: Readonly<SparkleSettings> = createDefaultSettings(),
+	settings: Readonly<
+		Pick<SparkleSettings, 'heading' | 'insertionPosition'>
+	> = createDefaultSettings(),
 ): string {
 	const heading = normalizeHeading(settings.heading);
 	const section = sectionIn(source, heading);

@@ -10,7 +10,7 @@ export const en = {
 	streamEmptyDescription:
 		'Write a thought to get started. After saving, keep writing the next one.',
 	quickDestination: 'Save to {path}',
-	captureBusy: 'An idea is being saved. Please try again in a moment.',
+	captureBusy: 'An idea is being processed. Please try again in a moment.',
 	openPanelError: 'Could not open the ideas panel. Please try again.',
 	rightPanelError: 'Could not open the right sidebar.',
 	subtitle: 'A place for your passing thoughts.',
@@ -33,6 +33,24 @@ export const en = {
 	optionalTags: 'Tags (optional)',
 	tagsPlaceholder: 'Add tags, separated by spaces',
 	chooseTags: 'Choose existing tags',
+	addImages: 'Add images',
+	removeImage: 'Remove image: {name}',
+	addingImages: 'Adding images…',
+	imagesAdded: 'Added {count} image(s)',
+	imageImportError: 'Could not add the image. Your draft is kept.',
+	imageUnsupported:
+		'Unsupported image: {name}. Use PNG, JPEG, GIF, WebP, SVG, BMP or AVIF.',
+	imageEmpty: 'The image is empty: {name}',
+	imageMissing:
+		'Image unavailable: {path}. Remove it from the draft or add it again.',
+	imageFolderBlocked: 'A file occupies the image folder: {path}',
+	imageFolderInvalid:
+		'Enter a vault folder path. Parent paths (..) and placeholders other than {placeholder} are not supported.',
+	noteImageFolderSetting: 'Note image folder',
+	dailyImageFolderSetting: 'Daily note image folder',
+	imageFolderDescription:
+		'Relative to the note folder; start with / for the vault root. Use {placeholder} for the date in YYYY-MM-DD format.',
+	applyFolder: 'Apply folder',
 	tagSuggestions: 'Tag suggestions',
 	shortcut: 'Markdown · Ctrl / ⌘ ↵ to save',
 	collapse: 'Collapse',
@@ -89,7 +107,8 @@ export const en = {
 		'Add new entries at the start or end of the section. Existing entries keep their order.',
 	positionStart: 'Section start · New entries first',
 	positionEnd: 'Section end · New entries last',
-	settingsIntro: 'Current notes and daily notes share these settings.',
+	settingsIntro:
+		'Configure the section, insertion order, and image folders for capturing ideas.',
 	settingsNote:
 		'If the heading is missing, a new section is created at the end of the note. Open panels update immediately, keeping your draft.',
 	headingSingleLine: 'The section heading must be a single line.',

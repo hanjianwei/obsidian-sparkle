@@ -6,6 +6,7 @@ import {
 	hasDraft,
 	loadPluginData,
 	normalizeHeading,
+	normalizeImageFolder,
 	SparkleSettings,
 } from './state';
 import { QuickCaptureModal } from './views/quick-capture';
@@ -119,7 +120,12 @@ export default class SparklePlugin extends Plugin {
 	}
 
 	private prepareCurrentNote(): void {
-		if (this.draft.mode !== 'file' || hasDraft(this.draft)) return;
+		if (
+			this.capturePending ||
+			this.draft.mode !== 'file' ||
+			hasDraft(this.draft)
+		)
+			return;
 		const file = this.getCaptureFile();
 		this.draft.targetPath = file?.extension === 'md' ? file.path : '';
 	}
@@ -165,6 +171,8 @@ export default class SparklePlugin extends Plugin {
 		const previous = this.settings;
 		const next = { ...previous, ...changes };
 		next.heading = normalizeHeading(next.heading);
+		next.noteImageFolder = normalizeImageFolder(next.noteImageFolder);
+		next.dailyImageFolder = normalizeImageFolder(next.dailyImageFolder);
 		this.settings = next;
 		try {
 			await this.persistDraft();
@@ -179,7 +187,11 @@ export default class SparklePlugin extends Plugin {
 	private async writeDraft(): Promise<void> {
 		do {
 			this.saveRequested = false;
-			await this.saveData({ ...this.draft, settings: { ...this.settings } });
+			await this.saveData({
+				...this.draft,
+				images: [...this.draft.images],
+				settings: { ...this.settings },
+			});
 		} while (this.saveRequested);
 	}
 }

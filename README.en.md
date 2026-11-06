@@ -11,13 +11,13 @@ Capture passing thoughts directly into your current note or today's daily note, 
 
 The **Current note / Daily note** buttons are always visible above the input. Switch directly without expanding any options; your content and tags are kept. Current note mode uses the open Markdown page, while daily note mode uses today's journal. Closing the dialog keeps your draft for next time.
 
-Quick capture has a single input and one toolbar row: the tag icon appends a selected tag to your text, the continuous capture icon opens the persistent page, and Capture saves your idea. Type `#` for inline tag completion. Use the top-right close button or `Esc` to dismiss the dialog and keep your draft.
+Quick capture has a single input and one toolbar row: add images, choose tags, open continuous capture, or save your idea. Type `#` for inline tag completion. Use the top-right close button or `Esc` to dismiss the dialog and keep your draft.
 
 ## Continuous capture
 
 Run **Sparkle: Continuous capture**, or select its toolbar icon in the quick capture dialog, to open a workspace tab. The composer stays at the top beneath the destination controls, with independently scrolling history below. Select **Capture** or press `Ctrl / ⌘ + Enter`; after a successful save, content and tags clear and the input stays focused for your next thought. Failed writes keep your draft.
 
-A single toolbar row below the input contains a tag icon, save status, and the Capture button. Choose an existing tag to append it to the end of your text, or type `#` in the editor for completion. The success message clears after about two seconds, or as soon as you start typing or choose a tag. When entering continuous capture, any separate tags from an unfinished draft move into the text too.
+A single toolbar row below the input contains image and tag icons, save status, and the Capture button. Choose an existing tag to append it to the end of your text, or type `#` in the editor for completion. The success message clears after about two seconds, or as soon as you start typing or choose a tag. When entering continuous capture, any separate tags from an unfinished draft move into the text too.
 
 Select **Daily note** for ongoing daily reflections, or **Current note** to use the Markdown note opened before entering capture. Notes are created only when needed on save. Heading, insertion order, and tag completion work as usual. History follows the order in the note and moves to the new entry after saving.
 
@@ -37,12 +37,23 @@ Current note mode automatically uses the open Markdown page for each new idea. O
 
 Daily note mode uses your Daily notes or Periodic Notes settings, including the folder, date format, and template. Missing notes are created on save.
 
+## Images
+
+All capture surfaces support selecting multiple images, pasting images, and dropping image files. Thumbnails let you remove attachments from the draft; image-only entries are supported. Closing a capture, switching surfaces, or a failed write preserves image drafts.
+
+Images default to `assets/` beside a regular note, or `assets/{date}/` beside a daily note. For example, images for `Daily/2026-11-06.md` go to `Daily/assets/2026-11-06/`. In **Settings → Sparkle**, configure **Note image folder** and **Daily note image folder**, then select **Apply folder**. Paths are relative to the note folder; a leading `/` selects the vault root, and `.` selects the note folder itself. `{date}` expands to the local date in `YYYY-MM-DD` format.
+
+Images are first imported into the vault to preserve drafts, then placed in the final destination folder when you save. Changing destination modes, saving after midnight, and changing folder settings use the final destination and save date. Embeds follow Obsidian's link preferences. Duplicate names receive a numeric suffix. Removing a draft attachment removes its reference; imported files remain available in the vault.
+
+Supported [Obsidian image formats](https://help.obsidian.md/file-formats) are PNG, JPEG, GIF, WebP, SVG, BMP, and AVIF.
+
 ## Capture settings
 
 Open **Settings → Sparkle**, or select the settings icon in the panel:
 
 - **Section heading**: the level-two heading to write under. Select **Apply heading** after editing it.
 - **Insertion position**: add new entries at the start or end of that section.
+- **Image folders**: set separate directories for current notes and daily notes.
 
 A missing section is created at the end of the file. Settings apply to both destination modes. Existing sections are not renamed or reordered, and unfinished drafts are kept.
 

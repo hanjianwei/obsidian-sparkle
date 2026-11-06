@@ -8,7 +8,11 @@ import {
 	SettingDefinitionItem,
 } from 'obsidian';
 import type SparklePlugin from './main';
-import { normalizeHeading, SparkleSettings } from './state';
+import {
+	normalizeHeading,
+	normalizeImageFolder,
+	SparkleSettings,
+} from './state';
 
 function settingDefinitions(plugin: SparklePlugin, feedback?: HTMLElement) {
 	const report = (message: string, error = false): void => {
@@ -84,6 +88,42 @@ function settingDefinitions(plugin: SparklePlugin, feedback?: HTMLElement) {
 				);
 			},
 		},
+		...(['dailyImageFolder', 'noteImageFolder'] as const).map((key) => ({
+			name: t(
+				key === 'dailyImageFolder'
+					? 'dailyImageFolderSetting'
+					: 'noteImageFolderSetting',
+			),
+			desc: t('imageFolderDescription', { placeholder: '{date}' }),
+			render: (setting: Setting): void => {
+				let folder = plugin.settings[key];
+				setting
+					.addText((text) =>
+						text.setValue(folder).onChange((value) => {
+							folder = value;
+						}),
+					)
+					.addButton((button) =>
+						button.setButtonText(t('applyFolder')).onClick(async () => {
+							let normalized: string;
+							try {
+								normalized = normalizeImageFolder(folder);
+							} catch (error) {
+								report(
+									error instanceof Error
+										? error.message
+										: t('settingsSaveError'),
+									true,
+								);
+								return;
+							}
+							button.setDisabled(true);
+							await apply({ [key]: normalized });
+							button.setDisabled(false);
+						}),
+					);
+			},
+		})),
 	];
 }
 

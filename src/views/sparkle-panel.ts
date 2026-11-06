@@ -16,6 +16,14 @@ import { hasDraft } from '../state';
 import { VaultTagIndex } from '../tag-index';
 import { TagSuggest } from './tag-suggest';
 import { appendInlineTags } from '../tags';
+import {
+	IMAGE_ACCEPT,
+	imageFolder,
+	imageName,
+	importImage,
+	placeImage,
+	withImageEmbeds,
+} from '../images';
 
 export interface SparklePanelOptions {
 	quick?: boolean;
@@ -43,6 +51,9 @@ export class SparklePanel extends Component {
 	private composer!: HTMLElement;
 	private addButton!: HTMLButtonElement;
 	private saveButton!: HTMLButtonElement;
+	private imageButton!: HTMLButtonElement;
+	private imageInput!: HTMLInputElement;
+	private attachments!: HTMLElement;
 	private records!: HTMLElement;
 	private controls: HTMLButtonElement[] = [];
 	private saving = false;
@@ -101,7 +112,21 @@ export class SparklePanel extends Component {
 			}),
 		);
 		this.registerEvent(
-			this.app.vault.on('rename', () => {
+			this.app.vault.on('rename', (file, oldPath) => {
+				const paths = this.plugin.draft.images.map((path) =>
+					path === oldPath
+						? file.path
+						: path.startsWith(`${oldPath}/`)
+							? `${file.path}${path.slice(oldPath.length)}`
+							: path,
+				);
+				if (
+					paths.some((path, index) => path !== this.plugin.draft.images[index])
+				) {
+					this.plugin.draft.images = paths;
+					this.persist();
+				}
+				if (!this.saving) this.renderImages();
 				if (
 					this.fixedTarget &&
 					this.plugin.draft.targetPath !== this.fixedTarget.path
@@ -115,6 +140,7 @@ export class SparklePanel extends Component {
 		);
 		this.registerEvent(
 			this.app.vault.on('delete', () => {
+				if (!this.saving) this.renderImages();
 				if (
 					this.fixedTarget &&
 					this.app.vault.getAbstractFileByPath(this.fixedTarget.path) !==
@@ -188,6 +214,7 @@ export class SparklePanel extends Component {
 			['daily', t('dailyMode'), 'calendar-days'],
 		] as const) {
 			const button = this.button(modes, '', () => {
+				if (this.plugin.capturePending) return;
 				this.plugin.draft.mode = mode;
 				if (mode === 'file') this.bindCurrentNote();
 				this.setStatus('');
@@ -262,6 +289,41 @@ export class SparklePanel extends Component {
 			this.updateSaveButton();
 			this.persist();
 		});
+		this.registerDomEvent(this.editor, 'paste', (event) => {
+			const files = Array.from(event.clipboardData?.files ?? []);
+			if (!files.length) return;
+			event.preventDefault();
+			event.stopPropagation();
+			void this.addImages(files);
+		});
+		this.registerDomEvent(this.editor, 'dragover', (event) => {
+			if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
+		});
+		this.registerDomEvent(this.editor, 'drop', (event) => {
+			const files = Array.from(event.dataTransfer?.files ?? []);
+			if (!files.length) return;
+			event.preventDefault();
+			event.stopPropagation();
+			void this.addImages(files);
+		});
+		this.attachments = this.composer.createDiv({ cls: 'sparkle-attachments' });
+		this.registerDomEvent(this.attachments, 'click', (event) => {
+			const button = (event.target as Element).closest<HTMLButtonElement>(
+				'[data-image-index]',
+			);
+			if (!button || this.plugin.capturePending) return;
+			const index = Number(button.dataset.imageIndex);
+			if (
+				!Number.isInteger(index) ||
+				index < 0 ||
+				index >= this.plugin.draft.images.length
+			)
+				return;
+			this.plugin.draft.images.splice(index, 1);
+			this.renderImages();
+			this.updateSaveButton();
+			this.persist();
+		});
 		this.tagSuggestions = [
 			this.addChild(
 				new TagSuggest(this.editor, 'content', () => this.tagIndex.getTags()),
@@ -299,6 +361,24 @@ export class SparklePanel extends Component {
 		const footer = (this.options.actionContainer ?? this.composer).createDiv({
 			cls: 'sparkle-composer-footer',
 		});
+		this.imageInput = root.createEl('input', {
+			type: 'file',
+			attr: { accept: IMAGE_ACCEPT, multiple: '', tabindex: '-1' },
+		});
+		this.imageInput.hidden = true;
+		this.registerDomEvent(this.imageInput, 'change', () => {
+			const files = Array.from(this.imageInput.files ?? []);
+			if (files.length) void this.addImages(files);
+		});
+		this.imageButton = this.iconButton(
+			footer,
+			'image-plus',
+			t('addImages'),
+			() => {
+				this.imageInput.value = '';
+				this.imageInput.click();
+			},
+		);
 		if (compact)
 			this.iconButton(footer, 'tags', t('chooseTags'), () => this.chooseTag());
 		else
@@ -378,6 +458,7 @@ export class SparklePanel extends Component {
 		this.updateSettingsSummary();
 		this.updateTarget();
 		this.updateComposer();
+		this.renderImages();
 	}
 
 	private iconButton(
@@ -395,11 +476,12 @@ export class SparklePanel extends Component {
 	}
 
 	private chooseTag(): void {
+		if (this.plugin.capturePending) return;
 		this.closeTagSuggestions();
 		new TagPicker(
 			this.app,
 			(tag) => {
-				if (this.saving || this.closed) return;
+				if (this.saving || this.closed || this.plugin.capturePending) return;
 				try {
 					if (this.compact) {
 						this.plugin.draft.content = appendInlineTags(
@@ -456,6 +538,7 @@ export class SparklePanel extends Component {
 			this.bindCurrentNote();
 		this.editor.value = this.plugin.draft.content;
 		if (this.tagsInput) this.tagsInput.value = this.plugin.draft.tags;
+		this.renderImages();
 		if (hasDraft(this.plugin.draft)) this.clearSavedStatus();
 		this.updateTarget();
 		this.updateComposer();
@@ -606,20 +689,144 @@ export class SparklePanel extends Component {
 		if (!this.plugin.draft.expanded) {
 			const label = this.addButton.querySelector('span:last-child');
 			if (label)
-				label.textContent =
-					this.plugin.draft.content || this.plugin.draft.tags
-						? t('continueDraft')
-						: t('addIdea');
+				label.textContent = hasDraft(this.plugin.draft)
+					? t('continueDraft')
+					: t('addIdea');
 		}
 	}
 
 	private updateSaveButton(): void {
-		this.draftBadge.hidden = !this.plugin.draft.content.trim();
+		const busy = this.saving || this.plugin.capturePending;
+		this.controls.forEach((control) => {
+			control.disabled = busy;
+		});
+		this.draftBadge.hidden = !hasDraft(this.plugin.draft);
+		this.imageButton.disabled =
+			this.saving ||
+			this.plugin.capturePending ||
+			(this.plugin.draft.mode === 'daily' ? !this.dailyReady : !this.target);
 		this.saveButton.disabled =
 			this.saving ||
 			this.plugin.capturePending ||
 			(this.plugin.draft.mode === 'daily' ? !this.dailyReady : !this.target) ||
-			!this.plugin.draft.content.trim();
+			(!this.plugin.draft.content.trim() && !this.plugin.draft.images.length);
+	}
+
+	private renderImages(): void {
+		this.attachments.empty();
+		this.attachments.hidden = !this.plugin.draft.images.length;
+		this.composer.toggleClass(
+			'has-images',
+			Boolean(this.plugin.draft.images.length),
+		);
+		for (const [index, path] of this.plugin.draft.images.entries()) {
+			const tile = this.attachments.createDiv({ cls: 'sparkle-attachment' });
+			const name = path.split('/').pop() ?? path;
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (file instanceof TFile)
+				tile.createEl('img', {
+					attr: {
+						src: this.app.vault.getResourcePath(file),
+						alt: name,
+						title: path,
+						loading: 'lazy',
+						decoding: 'async',
+					},
+				});
+			else
+				tile.createSpan({
+					text: name,
+					attr: { title: t('imageMissing', { path }) },
+				});
+			const remove = tile.createEl('button', {
+				cls: 'sparkle-attachment-remove',
+				attr: {
+					type: 'button',
+					'aria-label': t('removeImage', { name }),
+					title: t('removeImage', { name }),
+					'data-image-index': String(index),
+				},
+			});
+			setIcon(remove, 'x');
+			remove.disabled = this.saving || this.plugin.capturePending;
+		}
+	}
+
+	private setBusy(busy: boolean): void {
+		this.saving = busy;
+		this.controls.forEach((control) => {
+			control.disabled = busy;
+		});
+		this.attachments.querySelectorAll('button').forEach((button) => {
+			button.disabled = busy;
+		});
+		this.editor.disabled = busy && !this.options.stream;
+		if (this.tagsInput) this.tagsInput.disabled = busy;
+		this.composer.setAttribute('aria-busy', String(busy));
+		this.updateSaveButton();
+	}
+
+	private async addImages(files: File[]): Promise<void> {
+		if (this.closed) return;
+		if (this.plugin.capturePending) {
+			new Notice(t('captureBusy'));
+			return;
+		}
+		let folder: string;
+		try {
+			files.forEach((file) => imageName(file));
+			const now = new Date();
+			const target =
+				this.plugin.draft.mode === 'daily'
+					? getTodayTarget(this.app, now).path
+					: this.target?.path;
+			if (
+				!target ||
+				(this.plugin.draft.mode === 'file' &&
+					this.app.vault.getAbstractFileByPath(target) !== this.target)
+			)
+				throw new Error(t('chooseAvailableNote'));
+			folder = imageFolder(
+				target,
+				this.plugin.draft.mode,
+				this.plugin.settings,
+				now,
+			);
+		} catch (error) {
+			new Notice(
+				error instanceof Error ? error.message : t('imageImportError'),
+			);
+			return;
+		}
+		this.plugin.capturePending = true;
+		this.setBusy(true);
+		this.closeTagSuggestions();
+		this.setStatus(t('addingImages'));
+		this.plugin.syncPanels();
+		try {
+			for (const source of files) {
+				const file = await importImage(this.app, source, folder);
+				this.plugin.draft.images.push(file.path);
+				this.plugin.draft.expanded = true;
+				await this.plugin.persistDraft();
+			}
+			if (!this.closed)
+				this.setStatus(t('imagesAdded', { count: files.length }), true);
+		} catch (error) {
+			if (!this.closed) this.setStatus('');
+			new Notice(
+				error instanceof Error ? error.message : t('imageImportError'),
+			);
+		} finally {
+			this.plugin.capturePending = false;
+			this.saving = false;
+			if (!this.closed) {
+				this.setBusy(false);
+				this.renderImages();
+				this.focusEditor();
+			}
+			this.plugin.syncPanels();
+		}
 	}
 
 	private checkDailyTarget(): void {
@@ -663,27 +870,25 @@ export class SparklePanel extends Component {
 		if (this.plugin.capturePending) return;
 		this.clearSavedStatus();
 		if (this.inlineDraftTags()) this.editor.value = this.plugin.draft.content;
-		const snapshot = { ...this.plugin.draft };
+		const snapshot = {
+			...this.plugin.draft,
+			images: [...this.plugin.draft.images],
+		};
 		const settings = { ...this.plugin.settings };
 		const now = new Date();
 		let file = this.target;
 		let entry: string;
 		try {
-			entry = formatEntry(snapshot.content, snapshot.tags, now, snapshot.mode);
+			if (!snapshot.content.trim() && !snapshot.images.length)
+				throw new Error(t('contentRequired'));
+			parseTags(snapshot.tags);
 		} catch (error) {
 			new Notice(error instanceof Error ? error.message : t('captureError'));
 			return;
 		}
 		this.plugin.capturePending = true;
 		this.closeTagSuggestions();
-		this.saving = true;
-		this.controls.forEach((control) => {
-			control.disabled = true;
-		});
-		// Keep mobile keyboard focus during a continuous capture write.
-		this.editor.disabled = !this.options.stream;
-		if (this.tagsInput) this.tagsInput.disabled = true;
-		this.composer.setAttribute('aria-busy', 'true');
+		this.setBusy(true);
 		this.saveButton.setText(t('saving'));
 		let written = false;
 		let completed = false;
@@ -693,6 +898,26 @@ export class SparklePanel extends Component {
 			if (!file || this.app.vault.getAbstractFileByPath(file.path) !== file) {
 				throw new Error(t('chooseAvailableNote'));
 			}
+			const folder = imageFolder(file.path, snapshot.mode, settings, now);
+			const embeds: string[] = [];
+			for (const [index, path] of snapshot.images.entries()) {
+				const image = await placeImage(this.app, path, folder);
+				if (image.path !== path)
+					this.plugin.draft.images = this.plugin.draft.images.map((current) =>
+						current === path ? image.path : current,
+					);
+				snapshot.images[index] = image.path;
+				embeds.push(
+					`!${this.app.fileManager.generateMarkdownLink(image, file.path)}`,
+				);
+			}
+			if (snapshot.images.length) await this.plugin.persistDraft();
+			entry = formatEntry(
+				withImageEmbeds(snapshot.content, embeds),
+				snapshot.tags,
+				now,
+				snapshot.mode,
+			);
 			await this.app.vault.process(file, (source) =>
 				appendEntry(source, entry, settings),
 			);
@@ -700,12 +925,17 @@ export class SparklePanel extends Component {
 			if (
 				this.plugin.draft.content === snapshot.content &&
 				this.plugin.draft.tags === snapshot.tags &&
+				this.plugin.draft.images.length === snapshot.images.length &&
+				this.plugin.draft.images.every(
+					(path, index) => path === snapshot.images[index],
+				) &&
 				this.plugin.draft.mode === snapshot.mode &&
 				(snapshot.mode === 'daily' ||
 					this.plugin.draft.targetPath === file.path)
 			) {
 				this.plugin.draft.content = '';
 				this.plugin.draft.tags = '';
+				this.plugin.draft.images = [];
 				this.plugin.draft.expanded = true;
 			}
 			await this.plugin.persistDraft();
@@ -730,21 +960,17 @@ export class SparklePanel extends Component {
 		} finally {
 			this.plugin.capturePending = false;
 			this.saving = false;
-			this.composer.setAttribute('aria-busy', 'false');
+			if (!this.closed) this.setBusy(false);
 			this.plugin.syncPanels();
 			if (completed && !this.closed && this.options.onSaved) {
 				this.options.onSaved();
 			} else if (!this.closed) {
-				this.controls.forEach((control) => {
-					control.disabled = false;
-				});
-				this.editor.disabled = false;
-				if (this.tagsInput) this.tagsInput.disabled = false;
 				this.editor.value = this.plugin.draft.content;
 				if (this.tagsInput) this.tagsInput.value = this.plugin.draft.tags;
 				this.saveButton.setText(t(this.compact ? 'sendIdea' : 'saveIdea'));
 				this.updateTarget();
 				this.updateComposer();
+				this.renderImages();
 				if (completed) this.focusEditor();
 				await this.refreshRecords(completed);
 			}

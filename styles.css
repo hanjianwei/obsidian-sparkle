@@ -271,6 +271,63 @@
 	border-top: 1px solid var(--background-modifier-border);
 }
 
+.sparkle-panel .sparkle-attachments {
+	display: flex;
+	flex-shrink: 0;
+	gap: 8px;
+	max-width: 100%;
+	padding: 4px 0;
+	overflow-x: auto;
+}
+
+.sparkle-panel .sparkle-attachment {
+	position: relative;
+	flex: 0 0 72px;
+	height: 72px;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-secondary);
+}
+
+.sparkle-panel .sparkle-attachment img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.sparkle-panel .sparkle-attachment > span {
+	display: block;
+	padding: 8px;
+	font-size: 11px;
+	overflow-wrap: anywhere;
+}
+
+.sparkle-panel .sparkle-attachment-remove {
+	position: absolute;
+	top: 0;
+	right: 0;
+	display: grid;
+	place-items: center;
+	width: 28px;
+	min-height: 28px;
+	height: 28px;
+	padding: 4px;
+	border: 0;
+	background: var(--background-primary);
+}
+
+.sparkle-panel .sparkle-attachment-remove svg {
+	width: 14px;
+	height: 14px;
+}
+
+.sparkle-panel .sparkle-preview img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 6px;
+}
+
 .sparkle-panel .sparkle-tags-field {
 	align-items: center;
 	gap: 6px;
@@ -779,6 +836,14 @@
 	flex-shrink: 0;
 	padding: 8px 0;
 	background: var(--background-primary);
+}
+
+.sparkle-quick .sparkle-composer.has-images .sparkle-editor {
+	height: clamp(
+		64px,
+		calc(var(--sparkle-available-height, 100dvh) - 240px),
+		112px
+	);
 }
 
 @media (pointer: coarse) {

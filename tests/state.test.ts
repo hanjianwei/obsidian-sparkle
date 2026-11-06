@@ -3,6 +3,8 @@ import {
 	createDefaultSettings,
 	loadPluginData,
 	normalizeHeading,
+	normalizeImageFolder,
+	hasDraft,
 } from '../src/state';
 
 describe('设置与草稿加载', () => {
@@ -10,6 +12,8 @@ describe('设置与草稿加载', () => {
 		expect(loadPluginData(null).settings).toEqual({
 			heading: '灵感',
 			insertionPosition: 'end',
+			noteImageFolder: 'assets',
+			dailyImageFolder: 'assets/{date}',
 		});
 	});
 	it('恢复日记草稿与当前设置', () => {
@@ -26,9 +30,13 @@ describe('设置与草稿加载', () => {
 			targetPath: saved.targetPath,
 			content: saved.content,
 			tags: saved.tags,
+			images: [],
 			expanded: true,
 		});
-		expect(restored.settings).toEqual(saved.settings);
+		expect(restored.settings).toEqual({
+			...createDefaultSettings(),
+			...saved.settings,
+		});
 	});
 	it('设置和草稿可以一起保存、恢复', () => {
 		const restored = loadPluginData({
@@ -54,6 +62,51 @@ describe('设置与草稿加载', () => {
 		const first = loadPluginData(null);
 		first.settings.heading = '感想';
 		expect(loadPluginData(null).settings.heading).toBe('灵感');
+	});
+	it('图片草稿和图片目录可以持久化，只有图片时也视为草稿', () => {
+		const data = loadPluginData({
+			images: ['书/assets/photo.png'],
+			settings: { noteImageFolder: '/附件', dailyImageFolder: 'images/{date}' },
+		});
+		expect(data.draft.images).toEqual(['书/assets/photo.png']);
+		expect(hasDraft(data.draft)).toBe(true);
+		expect(data.draft.expanded).toBe(true);
+		expect(data.settings.noteImageFolder).toBe('/附件');
+		expect(data.settings.dailyImageFolder).toBe('images/{date}');
+	});
+	it('无效目录使用默认值，保留图片草稿', () => {
+		const data = loadPluginData({
+			images: ['assets/a.png'],
+			settings: {
+				noteImageFolder: '../bad',
+				dailyImageFolder: 'assets/{unknown}',
+			},
+		});
+		expect(data.settings).toEqual(createDefaultSettings());
+		expect(data.draft.images).toEqual(['assets/a.png']);
+	});
+});
+
+describe('图片目录设置', () => {
+	it.each([
+		[' assets\\photos/ ', 'assets/photos'],
+		['assets//{date}', 'assets/{date}'],
+		['/', '/'],
+		['.', '.'],
+	])('规范化 %j', (value, normalized) => {
+		expect(normalizeImageFolder(value)).toBe(normalized);
+	});
+	it.each([
+		'',
+		' ',
+		'../assets',
+		'assets/../photos',
+		'C:\\photos',
+		'https://example.com',
+		'assets/{year}',
+		'assets\nphotos',
+	])('拒绝无效目录 %j', (value) => {
+		expect(() => normalizeImageFolder(value)).toThrow();
 	});
 });
 

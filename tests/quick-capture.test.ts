@@ -191,7 +191,7 @@ describe('快速记录入口', () => {
 		plugin.capturePending = true;
 		plugin.openQuickCapture();
 		expect(ui.windows).toHaveLength(0);
-		expect(ui.notices[0]).toContain('正在保存');
+		expect(ui.notices[0]).toContain('正在处理');
 	});
 	it('卸载插件时关闭快速记录窗口', async () => {
 		const { plugin } = await setup();
@@ -282,7 +282,7 @@ describe('连续记录页面', () => {
 		plugin.capturePending = true;
 		await plugin.openContinuousCapture();
 		expect(workspace.getLeaf).not.toHaveBeenCalled();
-		expect(ui.notices[0]).toContain('正在保存');
+		expect(ui.notices[0]).toContain('正在处理');
 	});
 	it('共享草稿更新同时刷新侧栏和连续记录页面', async () => {
 		const { plugin, workspace } = await setup();
