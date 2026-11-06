@@ -16,6 +16,8 @@ import { hasDraft } from '../state';
 import { VaultTagIndex } from '../tag-index';
 import { TagSuggest } from './tag-suggest';
 import { appendInlineTags } from '../tags';
+import { locationCoordinates } from '../location';
+import { LocationModal } from './location-modal';
 import {
 	IMAGE_ACCEPT,
 	imageFolder,
@@ -54,6 +56,10 @@ export class SparklePanel extends Component {
 	private imageButton!: HTMLButtonElement;
 	private imageInput!: HTMLInputElement;
 	private attachments!: HTMLElement;
+	private locationButton!: HTMLButtonElement;
+	private locationPreview!: HTMLElement;
+	private locationLabel!: HTMLButtonElement;
+	private locationModal: LocationModal | null = null;
 	private records!: HTMLElement;
 	private controls: HTMLButtonElement[] = [];
 	private saving = false;
@@ -162,6 +168,7 @@ export class SparklePanel extends Component {
 
 	onunload(): void {
 		this.closed = true;
+		this.locationModal?.close();
 		this.clearStatusTimer();
 		if (this.tagFocusFrame !== null)
 			this.editor.ownerDocument.defaultView?.cancelAnimationFrame(
@@ -324,6 +331,18 @@ export class SparklePanel extends Component {
 			this.updateSaveButton();
 			this.persist();
 		});
+		this.locationPreview = this.composer.createDiv({
+			cls: 'sparkle-location-preview',
+		});
+		this.locationLabel = this.button(this.locationPreview, '', () =>
+			this.chooseLocation(),
+		);
+		this.locationLabel.addClass('sparkle-location-label');
+		this.iconButton(this.locationPreview, 'x', t('removeLocation'), () => {
+			if (this.plugin.capturePending) return;
+			this.plugin.draft.location = null;
+			this.locationChanged();
+		});
 		this.tagSuggestions = [
 			this.addChild(
 				new TagSuggest(this.editor, 'content', () => this.tagIndex.getTags()),
@@ -378,6 +397,12 @@ export class SparklePanel extends Component {
 				this.imageInput.value = '';
 				this.imageInput.click();
 			},
+		);
+		this.locationButton = this.iconButton(
+			footer,
+			'map-pin',
+			t('addLocation'),
+			() => this.chooseLocation(),
 		);
 		if (compact)
 			this.iconButton(footer, 'tags', t('chooseTags'), () => this.chooseTag());
@@ -459,6 +484,62 @@ export class SparklePanel extends Component {
 		this.updateTarget();
 		this.updateComposer();
 		this.renderImages();
+		this.renderLocation();
+	}
+
+	private chooseLocation(): void {
+		if (this.closed || this.plugin.capturePending || this.locationModal) return;
+		this.closeTagSuggestions();
+		this.locationModal = new LocationModal(
+			this.app,
+			this.plugin.draft.location,
+			(location) => {
+				if (this.closed || this.plugin.capturePending) return false;
+				this.plugin.draft.location = location;
+				this.locationChanged();
+				return true;
+			},
+			() => {
+				this.locationModal = null;
+				if (!this.closed) this.focusEditor();
+			},
+		);
+		this.locationModal.open();
+	}
+
+	private locationChanged(): void {
+		this.clearSavedStatus();
+		this.renderLocation();
+		this.updateSaveButton();
+		this.persist();
+		this.plugin.syncPanels();
+	}
+
+	private renderLocation(): void {
+		const location = this.plugin.draft.location;
+		this.locationPreview.hidden = !location;
+		this.composer.toggleClass('has-location', Boolean(location));
+		this.locationButton.toggleClass('is-active', Boolean(location));
+		this.locationButton.setAttribute('aria-pressed', String(Boolean(location)));
+		this.locationButton.setAttribute(
+			'aria-label',
+			t(location ? 'editLocation' : 'addLocation'),
+		);
+		this.locationButton.setAttribute(
+			'title',
+			location
+				? `${location.name || t('currentLocation')} · ${locationCoordinates(location)}`
+				: t('addLocation'),
+		);
+		if (location) {
+			this.locationLabel.setText(
+				`📍 ${location.name || locationCoordinates(location)}`,
+			);
+			this.locationLabel.setAttribute(
+				'title',
+				`${t('editLocation')} · ${locationCoordinates(location)}`,
+			);
+		}
 	}
 
 	private iconButton(
@@ -540,6 +621,7 @@ export class SparklePanel extends Component {
 		if (this.tagsInput) this.tagsInput.value = this.plugin.draft.tags;
 		this.renderImages();
 		if (hasDraft(this.plugin.draft)) this.clearSavedStatus();
+		this.renderLocation();
 		this.updateTarget();
 		this.updateComposer();
 		if (tagsMoved) this.persist();
@@ -709,7 +791,9 @@ export class SparklePanel extends Component {
 			this.saving ||
 			this.plugin.capturePending ||
 			(this.plugin.draft.mode === 'daily' ? !this.dailyReady : !this.target) ||
-			(!this.plugin.draft.content.trim() && !this.plugin.draft.images.length);
+			(!this.plugin.draft.content.trim() &&
+				!this.plugin.draft.images.length &&
+				!this.plugin.draft.location);
 	}
 
 	private renderImages(): void {
@@ -754,6 +838,7 @@ export class SparklePanel extends Component {
 
 	private setBusy(busy: boolean): void {
 		this.saving = busy;
+		if (busy) this.locationModal?.close();
 		this.controls.forEach((control) => {
 			control.disabled = busy;
 		});
@@ -873,13 +958,18 @@ export class SparklePanel extends Component {
 		const snapshot = {
 			...this.plugin.draft,
 			images: [...this.plugin.draft.images],
+			location: this.plugin.draft.location,
 		};
 		const settings = { ...this.plugin.settings };
 		const now = new Date();
 		let file = this.target;
 		let entry: string;
 		try {
-			if (!snapshot.content.trim() && !snapshot.images.length)
+			if (
+				!snapshot.content.trim() &&
+				!snapshot.images.length &&
+				!snapshot.location
+			)
 				throw new Error(t('contentRequired'));
 			parseTags(snapshot.tags);
 		} catch (error) {
@@ -917,6 +1007,7 @@ export class SparklePanel extends Component {
 				snapshot.tags,
 				now,
 				snapshot.mode,
+				snapshot.location,
 			);
 			await this.app.vault.process(file, (source) =>
 				appendEntry(source, entry, settings),
@@ -925,6 +1016,7 @@ export class SparklePanel extends Component {
 			if (
 				this.plugin.draft.content === snapshot.content &&
 				this.plugin.draft.tags === snapshot.tags &&
+				this.plugin.draft.location === snapshot.location &&
 				this.plugin.draft.images.length === snapshot.images.length &&
 				this.plugin.draft.images.every(
 					(path, index) => path === snapshot.images[index],
@@ -936,6 +1028,7 @@ export class SparklePanel extends Component {
 				this.plugin.draft.content = '';
 				this.plugin.draft.tags = '';
 				this.plugin.draft.images = [];
+				this.plugin.draft.location = null;
 				this.plugin.draft.expanded = true;
 			}
 			await this.plugin.persistDraft();
@@ -971,6 +1064,7 @@ export class SparklePanel extends Component {
 				this.updateTarget();
 				this.updateComposer();
 				this.renderImages();
+				this.renderLocation();
 				if (completed) this.focusEditor();
 				await this.refreshRecords(completed);
 			}

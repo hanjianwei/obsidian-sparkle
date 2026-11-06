@@ -11,13 +11,13 @@ Capture passing thoughts directly into your current note or today's daily note, 
 
 The **Current note / Daily note** buttons are always visible above the input. Switch directly without expanding any options; your content and tags are kept. Current note mode uses the open Markdown page, while daily note mode uses today's journal. Closing the dialog keeps your draft for next time.
 
-Quick capture has a single input and one toolbar row: add images, choose tags, open continuous capture, or save your idea. Type `#` for inline tag completion. Use the top-right close button or `Esc` to dismiss the dialog and keep your draft.
+Quick capture has a single input and one toolbar row: add images, attach a location, choose tags, open continuous capture, or save your idea. Type `#` for inline tag completion. Use the top-right close button or `Esc` to dismiss the dialog and keep your draft.
 
 ## Continuous capture
 
 Run **Sparkle: Continuous capture**, or select its toolbar icon in the quick capture dialog, to open a workspace tab. The composer stays at the top beneath the destination controls, with independently scrolling history below. Select **Capture** or press `Ctrl / ⌘ + Enter`; after a successful save, content and tags clear and the input stays focused for your next thought. Failed writes keep your draft.
 
-A single toolbar row below the input contains image and tag icons, save status, and the Capture button. Choose an existing tag to append it to the end of your text, or type `#` in the editor for completion. The success message clears after about two seconds, or as soon as you start typing or choose a tag. When entering continuous capture, any separate tags from an unfinished draft move into the text too.
+A single toolbar row below the input contains image, location, and tag icons, save status, and the Capture button. Choose an existing tag to append it to the end of your text, or type `#` in the editor for completion. The success message clears after about two seconds, or as soon as you start typing or choose a tag. When entering continuous capture, any separate tags from an unfinished draft move into the text too.
 
 Select **Daily note** for ongoing daily reflections, or **Current note** to use the Markdown note opened before entering capture. Notes are created only when needed on save. Heading, insertion order, and tag completion work as usual. History follows the order in the note and moves to the new entry after saving.
 
@@ -46,6 +46,14 @@ Images default to `assets/` beside a regular note, or `assets/{date}/` beside a 
 Images are first imported into the vault to preserve drafts, then placed in the final destination folder when you save. Changing destination modes, saving after midnight, and changing folder settings use the final destination and save date. Embeds follow Obsidian's link preferences. Duplicate names receive a numeric suffix. Removing a draft attachment removes its reference; imported files remain available in the vault.
 
 Supported [Obsidian image formats](https://help.obsidian.md/file-formats) are PNG, JPEG, GIF, WebP, SVG, BMP, and AVIF.
+
+## Locations (geotags)
+
+Select the location icon in any capture toolbar. On mobile, select **Get current location** and grant the system permission when prompted. On desktop, enter coordinates manually. Use **latitude, longitude**, such as `31.2304, 121.4737`; `geo:31.2304,121.4737` also works. Optionally name the place, then select **Attach location**. The attached place appears as a compact label; select it to edit or use × to remove it. Location-only entries are supported.
+
+Each entry stores its own Markdown link, such as `[📍 Café](geo:31.2304,121.4737)`, without changing note-level properties. Closing a capture or a failed write preserves its location; a successful save clears it so the next entry starts without a location.
+
+Device location is requested only when you select **Get current location**. Sparkle does not track location in the background or call third-party map or address lookup services. If permission is denied, the request times out, or location is unavailable, enter coordinates manually or cancel and capture as usual. This version does not include maps, address lookup, or photo EXIF extraction. Device permissions, accuracy, and positioning still require on-device verification.
 
 ## Capture settings
 

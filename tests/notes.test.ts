@@ -39,6 +39,35 @@ describe('灵感格式', () => {
 			formatEntry('整分钟的想法', '', new Date(2026, 10, 6, 9, 5)),
 		).toContain('2026-11-06 09:05:00');
 	});
+	it('位置链接属于每条记录，不改写笔记级属性，正文和图片仍保留', () => {
+		const location = { latitude: 31.2304, longitude: 121.4737, name: '咖啡馆' };
+		const result = formatEntry(
+			'想到一个点子\n\n![[assets/photo.png]]',
+			'#灵感',
+			now,
+			'daily',
+			location,
+		);
+		expect(result).toBe(
+			'- 09:05:07 #灵感 [📍 咖啡馆](geo:31.2304,121.4737)\n    想到一个点子\n    \n    ![[assets/photo.png]]',
+		);
+		const source = '---\nlocation: 0,0\n---\n';
+		expect(appendEntry(source, result)).toBe(
+			`${source}\n## 灵感\n\n${result}\n`,
+		);
+	});
+	it('允许单独记录位置，下一条没有位置时不附加', () => {
+		expect(
+			formatEntry('', '', now, 'file', {
+				latitude: -31,
+				longitude: -121,
+				name: '',
+			}),
+		).toBe('- 2026-11-06 09:05:07 [📍 当前位置](geo:-31,-121)');
+		expect(formatEntry('下一条', '', now, 'daily')).toBe(
+			'- 09:05:07\n    下一条',
+		);
+	});
 });
 
 describe('标签', () => {

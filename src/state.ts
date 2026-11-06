@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { normalizeLocation, SparkleLocation } from './location';
 export interface SparkleSettings {
 	heading: string;
 	insertionPosition: 'start' | 'end';
@@ -12,14 +13,18 @@ export interface SparkleDraft {
 	content: string;
 	tags: string;
 	images: string[];
+	location: SparkleLocation | null;
 	expanded: boolean;
 }
 
 export function hasDraft(
-	draft: Pick<SparkleDraft, 'content' | 'tags' | 'images'>,
+	draft: Pick<SparkleDraft, 'content' | 'tags' | 'images' | 'location'>,
 ): boolean {
 	return Boolean(
-		draft.content.trim() || draft.tags.trim() || draft.images.length,
+		draft.content.trim() ||
+		draft.tags.trim() ||
+		draft.images.length ||
+		draft.location,
 	);
 }
 
@@ -72,6 +77,7 @@ export function loadPluginData(value: unknown): {
 		content: '',
 		tags: '',
 		images: [],
+		location: null,
 		expanded: false,
 	};
 	const settings = createDefaultSettings();
@@ -85,6 +91,13 @@ export function loadPluginData(value: unknown): {
 		draft.images = data.images.filter(
 			(path): path is string => typeof path === 'string' && Boolean(path),
 		);
+	if (data.location != null) {
+		try {
+			draft.location = normalizeLocation(data.location);
+		} catch {
+			/* Invalid stored coordinates must not be attached to a record. */
+		}
+	}
 	draft.expanded = hasDraft(draft);
 	if (data.settings && typeof data.settings === 'object') {
 		const saved = data.settings as Record<string, unknown>;

@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { locationLink, SparkleLocation } from './location';
 import {
 	createDefaultSettings,
 	normalizeHeading,
@@ -114,8 +115,9 @@ export function formatEntry(
 	tags: string,
 	now: Date,
 	mode: 'file' | 'daily' = 'file',
+	location: SparkleLocation | null = null,
 ): string {
-	if (!content.trim()) throw new Error(t('contentRequired'));
+	if (!content.trim() && !location) throw new Error(t('contentRequired'));
 	const pad = (value: number): string => String(value).padStart(2, '0');
 	const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 	const timestamp =
@@ -125,8 +127,8 @@ export function formatEntry(
 	const labels = parseTags(tags);
 	const body = content.replace(/\r\n?/g, '\n').replace(/^\n+|\n+$/g, '');
 	return [
-		`- ${timestamp}${labels.length ? ` ${labels.join(' ')}` : ''}`,
-		...body.split('\n').map((line) => `    ${line}`),
+		`- ${timestamp}${labels.length ? ` ${labels.join(' ')}` : ''}${location ? ` ${locationLink(location)}` : ''}`,
+		...(body.trim() ? body.split('\n').map((line) => `    ${line}`) : []),
 	].join('\n');
 }
 

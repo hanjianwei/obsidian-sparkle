@@ -34,6 +34,30 @@ export const en = {
 	tagsPlaceholder: 'Add tags, separated by spaces',
 	chooseTags: 'Choose existing tags',
 	addImages: 'Add images',
+	addLocation: 'Add location',
+	editLocation: 'Edit location',
+	removeLocation: 'Remove location',
+	currentLocation: 'Current location',
+	getCurrentLocation: 'Get current location',
+	locationCoordinates: 'Coordinates (latitude, longitude)',
+	locationName: 'Place name (optional)',
+	locationNamePlaceholder: 'Office, café, or another place',
+	locationDescription:
+		'Attach a place to this record. Use your device location or enter coordinates.',
+	locationUnsupported:
+		'Device location is unavailable here. Enter coordinates manually; mobile supports device location.',
+	locationInvalid:
+		'Enter latitude (-90 to 90), then longitude (-180 to 180), separated by a comma.',
+	locationDenied:
+		'Location permission was denied. Allow location access for Obsidian in system settings, or enter coordinates manually.',
+	locationTimeout:
+		'Location request timed out. Try again or enter coordinates manually.',
+	locationUnavailable:
+		'Could not get your location. Try again or enter coordinates manually.',
+	locating: 'Getting location…',
+	locationFound: 'Location ready. Add a name if you like, then attach it.',
+	attachLocation: 'Attach location',
+	cancelLocation: 'Cancel',
 	removeImage: 'Remove image: {name}',
 	addingImages: 'Adding images…',
 	imagesAdded: 'Added {count} image(s)',

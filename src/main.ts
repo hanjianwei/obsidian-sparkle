@@ -190,6 +190,7 @@ export default class SparklePlugin extends Plugin {
 			await this.saveData({
 				...this.draft,
 				images: [...this.draft.images],
+				location: this.draft.location ? { ...this.draft.location } : null,
 				settings: { ...this.settings },
 			});
 		} while (this.saveRequested);

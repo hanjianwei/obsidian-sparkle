@@ -31,6 +31,7 @@ describe('设置与草稿加载', () => {
 			content: saved.content,
 			tags: saved.tags,
 			images: [],
+			location: null,
 			expanded: true,
 		});
 		expect(restored.settings).toEqual({
@@ -84,6 +85,22 @@ describe('设置与草稿加载', () => {
 		});
 		expect(data.settings).toEqual(createDefaultSettings());
 		expect(data.draft.images).toEqual(['assets/a.png']);
+	});
+	it('只有位置也会保留草稿，持久化后恢复该条记录的位置', () => {
+		const location = { latitude: 31.2304, longitude: 121.4737, name: '咖啡馆' };
+		const restored = loadPluginData(JSON.parse(JSON.stringify({ location })));
+		expect(restored.draft.location).toEqual(location);
+		expect(hasDraft(restored.draft)).toBe(true);
+		expect(restored.draft.expanded).toBe(true);
+	});
+	it('损坏的位置不会影响正文草稿，默认不附加位置', () => {
+		expect(loadPluginData(null).draft.location).toBeNull();
+		const restored = loadPluginData({
+			content: '想法',
+			location: { latitude: 100, longitude: 121, name: '' },
+		});
+		expect(restored.draft.content).toBe('想法');
+		expect(restored.draft.location).toBeNull();
 	});
 });
 
