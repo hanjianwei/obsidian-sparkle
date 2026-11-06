@@ -74,7 +74,6 @@ export const en = {
 	dailyImageFolderSetting: 'Daily note image folder',
 	imageFolderDescription:
 		'Relative to the note folder; start with / for the vault root. Use {placeholder} for the date in YYYY-MM-DD format.',
-	applyFolder: 'Apply folder',
 	tagSuggestions: 'Tag suggestions',
 	shortcut: 'Markdown · Ctrl / ⌘ ↵ to save',
 	collapse: 'Collapse',
@@ -119,20 +118,21 @@ export const en = {
 	noRecords: 'No ideas yet',
 	noRecordsDescription: 'Select “Add an idea” to capture your next thought.',
 	readIdeasError: 'Could not read the ideas. Please choose the note again.',
-	settingsSaved: 'Saved. New entries will use these settings.',
+	resetSettings: 'Restore defaults',
+	resetSettingsDescription:
+		'Reset the heading, insertion position, and image folders. Your notes and draft are kept.',
+	settingsReset: 'Default settings restored.',
 	settingsSaveError: 'Could not save settings. Please try again.',
 	headingSetting: 'Section heading',
 	headingDescription:
 		'The level-two heading to write under, without ##. Changing this does not rename or move existing content.',
-	applyHeading: 'Apply heading',
-	invalidHeading: 'Please enter a valid section heading.',
 	positionSetting: 'Insertion position',
 	positionDescription:
 		'Add new entries at the start or end of the section. Existing entries keep their order.',
 	positionStart: 'Section start · New entries first',
 	positionEnd: 'Section end · New entries last',
 	settingsIntro:
-		'Configure the section, insertion order, and image folders for capturing ideas.',
+		'Changes save automatically. Configure the section, insertion order, and image folders.',
 	settingsNote:
 		'If the heading is missing, a new section is created at the end of the note. Open panels update immediately, keeping your draft.',
 	headingSingleLine: 'The section heading must be a single line.',

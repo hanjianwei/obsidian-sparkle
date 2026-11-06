@@ -27,7 +27,7 @@ A lightweight Obsidian plugin for capturing ideas into your current note or dail
 2. Choose **Current note** or **Daily note**, then write your idea.
 3. Select **Capture** or press `Ctrl / ⌘ + Enter`.
 
-Use the toolbar to add images, locations, or tags. Type `#` for tag completion. Configure headings, insertion order, and image folders in **Settings → Sparkle**. Daily capture requires Daily notes or Periodic Notes.
+Use the toolbar to add images, locations, or tags. Type `#` for tag completion. **Settings → Sparkle** saves changes automatically and includes **Restore defaults**. Daily capture requires Daily notes or Periodic Notes.
 
 ## Installation
 

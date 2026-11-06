@@ -70,7 +70,6 @@ export const zh = {
 	dailyImageFolderSetting: '日记图片目录',
 	imageFolderDescription:
 		'相对笔记所在目录；以 / 开头表示 vault 根目录。可用 {placeholder} 插入 YYYY-MM-DD 日期。',
-	applyFolder: '应用目录',
 	tagSuggestions: '标签候选',
 	shortcut: 'Markdown · Ctrl / ⌘ ↵ 保存',
 	collapse: '收起',
@@ -109,19 +108,20 @@ export const zh = {
 	noRecords: '还没有记录',
 	noRecordsDescription: '点击“添加灵感”，留住刚刚的想法。',
 	readIdeasError: '暂时无法读取灵感，请重新选择笔记。',
-	settingsSaved: '已保存，新记录将使用此设置。',
+	resetSettings: '恢复默认值',
+	resetSettingsDescription:
+		'重置小节标题、插入位置和图片目录，保留笔记和草稿。',
+	settingsReset: '已恢复默认设置。',
 	settingsSaveError: '设置保存失败，请重试。',
 	headingSetting: '感想小节标题',
 	headingDescription:
 		'对应笔记中的二级标题，无需输入 ##。更改后不会重命名或移动已有内容。',
-	applyHeading: '应用标题',
-	invalidHeading: '请输入有效的小节标题。',
 	positionSetting: '插入位置',
 	positionDescription:
 		'在所选小节的开头或结尾插入新记录，不会重新排序已有记录。',
 	positionStart: '小节开头 · 新记录在前',
 	positionEnd: '小节结尾 · 新记录在后',
-	settingsIntro: '设置灵感的小节、插入顺序和图片目录。',
+	settingsIntro: '修改后自动保存，可设置小节、插入顺序和图片目录。',
 	settingsNote:
 		'找不到该标题时，会在笔记末尾创建对应小节。设置立即同步到已打开的面板，草稿会保留。',
 	headingSingleLine: '小节标题只能包含一行文字。',

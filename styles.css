@@ -489,6 +489,16 @@
 	color: var(--text-error);
 }
 
+.sparkle-setting .sparkle-setting-error {
+	margin-top: 4px;
+	color: var(--text-error);
+	font-size: var(--font-ui-small);
+}
+
+.sparkle-setting .sparkle-setting-error:empty {
+	display: none;
+}
+
 .sparkle-settings .setting-item-control {
 	flex-wrap: wrap;
 	flex: 1 1 220px;

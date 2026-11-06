@@ -1,91 +1,86 @@
 import { t } from './i18n';
 import {
 	App,
+	DropdownComponent,
 	Modal,
 	Notice,
 	PluginSettingTab,
 	Setting,
 	SettingDefinitionItem,
+	TextComponent,
 } from 'obsidian';
 import type SparklePlugin from './main';
-import {
-	normalizeHeading,
-	normalizeImageFolder,
-	SparkleSettings,
-} from './state';
+import { createDefaultSettings, SparkleSettings } from './state';
 
 function settingDefinitions(plugin: SparklePlugin, feedback?: HTMLElement) {
+	const resetControls: Array<() => void> = [];
 	const report = (message: string, error = false): void => {
 		if (feedback) {
 			feedback.setText(message);
 			feedback.toggleClass('is-error', error);
 		} else new Notice(message);
 	};
-	const apply = async (changes: Partial<SparkleSettings>): Promise<boolean> => {
-		try {
-			await plugin.updateSettings(changes);
-			report(t('settingsSaved'));
-			return true;
-		} catch (error) {
-			report(
-				error instanceof Error ? error.message : t('settingsSaveError'),
-				true,
-			);
-			return false;
-		}
+	const bind = (
+		setting: Setting,
+		control: TextComponent | DropdownComponent,
+		key: keyof SparkleSettings,
+	): void => {
+		let revision = 0;
+		setting.settingEl.addClass('sparkle-setting');
+		const errorEl = setting.descEl.createDiv({
+			cls: 'sparkle-setting-error',
+			attr: { role: 'status', 'aria-live': 'polite' },
+		});
+		const inputEl = 'inputEl' in control ? control.inputEl : control.selectEl;
+		const clearError = (): void => {
+			errorEl.empty();
+			inputEl.removeAttribute('aria-invalid');
+		};
+		control.setValue(plugin.settings[key]).onChange(async (value) => {
+			const current = ++revision;
+			clearError();
+			feedback?.empty();
+			const changes: Partial<SparkleSettings> =
+				key === 'insertionPosition'
+					? { insertionPosition: value === 'start' ? 'start' : 'end' }
+					: { [key]: value };
+			try {
+				await plugin.updateSettings(changes);
+			} catch (error) {
+				if (current !== revision) return;
+				errorEl.setText(
+					error instanceof Error ? error.message : t('settingsSaveError'),
+				);
+				inputEl.setAttribute('aria-invalid', 'true');
+			}
+		});
+		resetControls.push(() => {
+			revision++;
+			control.setValue(plugin.settings[key]);
+			clearError();
+		});
 	};
 	return [
 		{
 			name: t('headingSetting'),
 			desc: t('headingDescription'),
 			render: (setting: Setting): void => {
-				let heading = plugin.settings.heading;
-				setting
-					.addText((text) =>
-						text
-							.setValue(heading)
-							.setPlaceholder(t('defaultHeading'))
-							.onChange((value) => {
-								heading = value;
-							}),
-					)
-					.addButton((button) =>
-						button.setButtonText(t('applyHeading')).onClick(async () => {
-							let normalized: string;
-							try {
-								normalized = normalizeHeading(heading);
-							} catch (error) {
-								report(
-									error instanceof Error ? error.message : t('invalidHeading'),
-									true,
-								);
-								return;
-							}
-							button.setDisabled(true);
-							await apply({ heading: normalized });
-							button.setDisabled(false);
-						}),
-					);
+				setting.addText((text) => {
+					text.setPlaceholder(t('defaultHeading'));
+					bind(setting, text, 'heading');
+				});
 			},
 		},
 		{
 			name: t('positionSetting'),
 			desc: t('positionDescription'),
 			render: (setting: Setting): void => {
-				setting.addDropdown((dropdown) =>
+				setting.addDropdown((dropdown) => {
 					dropdown
 						.addOption('start', t('positionStart'))
-						.addOption('end', t('positionEnd'))
-						.setValue(plugin.settings.insertionPosition)
-						.onChange(async (value) => {
-							dropdown.setDisabled(true);
-							const saved = await apply({
-								insertionPosition: value === 'start' ? 'start' : 'end',
-							});
-							if (!saved) dropdown.setValue(plugin.settings.insertionPosition);
-							dropdown.setDisabled(false);
-						}),
-				);
+						.addOption('end', t('positionEnd'));
+					bind(setting, dropdown, 'insertionPosition');
+				});
 			},
 		},
 		...(['dailyImageFolder', 'noteImageFolder'] as const).map((key) => ({
@@ -96,34 +91,32 @@ function settingDefinitions(plugin: SparklePlugin, feedback?: HTMLElement) {
 			),
 			desc: t('imageFolderDescription', { placeholder: '{date}' }),
 			render: (setting: Setting): void => {
-				let folder = plugin.settings[key];
-				setting
-					.addText((text) =>
-						text.setValue(folder).onChange((value) => {
-							folder = value;
-						}),
-					)
-					.addButton((button) =>
-						button.setButtonText(t('applyFolder')).onClick(async () => {
-							let normalized: string;
-							try {
-								normalized = normalizeImageFolder(folder);
-							} catch (error) {
-								report(
-									error instanceof Error
-										? error.message
-										: t('settingsSaveError'),
-									true,
-								);
-								return;
-							}
-							button.setDisabled(true);
-							await apply({ [key]: normalized });
-							button.setDisabled(false);
-						}),
-					);
+				setting.addText((text) => bind(setting, text, key));
 			},
 		})),
+		{
+			name: t('resetSettings'),
+			desc: t('resetSettingsDescription'),
+			render: (setting: Setting): void => {
+				setting.addButton((button) =>
+					button.setButtonText(t('resetSettings')).onClick(async () => {
+						button.setDisabled(true);
+						try {
+							await plugin.updateSettings(createDefaultSettings());
+							for (const reset of resetControls) reset();
+							report(t('settingsReset'));
+						} catch (error) {
+							report(
+								error instanceof Error ? error.message : t('settingsSaveError'),
+								true,
+							);
+						} finally {
+							button.setDisabled(false);
+						}
+					}),
+				);
+			},
+		},
 	];
 }
 
