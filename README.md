@@ -1,178 +1,34 @@
 # Sparkle
 
-简体中文 · [English](README.en.md)
+English · [简体中文](README.cn.md)
 
-灵感像火花一样，随手捕捉，留在该留的笔记中。Sparkle 是一个轻量的 Obsidian 插件：通过快速记录弹窗、连续记录页面或常驻侧边面板，把灵感直接写入当前笔记或当天日记。
+A lightweight Obsidian plugin for capturing ideas into your current note or daily note. Requires Obsidian 1.13.0 or later.
 
-## 使用
+## Features
 
-需要 Obsidian 1.13.0 或更新版本。
+- Quick capture dialog, continuous capture tab, and persistent sidebar.
+- Switch between the current note and today's daily note. Reuse Daily notes or Periodic Notes settings.
+- Markdown content, timestamps accurate to the second, and existing tag completion.
+- Images: select, paste, or drop files. Default folders beside the target note: `assets/` for notes, `assets/{date}/` for daily notes.
+- Geotags: device location on mobile with permission, or manual coordinates, with an optional place name.
+- Configurable section heading, insertion order, and image folders.
+- Local drafts, layouts that adjust to the mobile keyboard, and English / Chinese interfaces.
 
-1. 点击星光按钮，或运行命令 **Sparkle: 快速记录灵感**，直接进入输入状态。
-2. 输入正文，点击 **记录**，或按 `Ctrl / ⌘ + Enter`。成功保存后弹窗自动关闭。
+## Principles
 
-顶部直接显示 **当前笔记／今日日记** 两个按钮，可随时切换，无需展开其他选项。当前笔记模式关联正在阅读的 Markdown 文件，日记模式关联今天的日记。切换模式保留正文和标签；关闭弹窗会保留草稿，下次打开可继续写。
+- Make capture quick, with few steps and a small interface.
+- Reuse Obsidian's built-in capabilities and features already provided by other plugins.
+- Keep features simple and focused on recording. Use Bases, DataviewJS, Map View, and other tools for queries, statistics, maps, and richer workflows.
+- Store records as plain Markdown and attachments in the vault.
 
-快速记录弹窗保留正文框和一行操作：图片图标用于添加图片，定位图标用于附加位置，标签图标用于选择标签并追加到正文末尾，连续记录图标用于进入常驻页面，右侧 **记录** 用于保存。也可以在正文中输入 `#` 自动补全标签。右上角关闭按钮或 `Esc` 可关闭并保留草稿。
+## Usage
 
-### 连续记录
+1. Run **Sparkle: Quick capture** or **Sparkle: Continuous capture**.
+2. Choose **Current note** or **Daily note**, then write your idea.
+3. Select **Capture** or press `Ctrl / ⌘ + Enter`.
 
-运行 **Sparkle: 连续记录**，或点击快速记录弹窗底部的 **连续记录** 图标，即可打开一个常驻的工作区标签页。输入框固定在顶部写入模式下方，历史记录在下面独立滚动；点击 **记录** 或按 `Ctrl / ⌘ + Enter` 后，已保存的内容和标签清空，焦点回到输入框，可以继续下一条。写入失败会保留草稿。
+Use the toolbar to add images, locations, or tags. Type `#` for tag completion. Configure headings, insertion order, and image folders in **Settings → Sparkle**. Daily capture requires Daily notes or Periodic Notes.
 
-输入框下方只有一行工具栏：可添加图片、附加位置，或点击标签图标选择已有标签并追加到正文末尾；也可以在正文中输入 `#` 使用自动补全。右侧直接点击 **记录**，成功提示在同一行短暂显示约 2 秒，开始输入下一条或选择标签时立即清除。进入连续记录时，草稿中原先独立填写的标签也会移到正文末尾。
+## Installation
 
-记录日常感想时，切到 **今日日记** 即可持续写入当天日记；也可切回 **当前笔记**，写入打开连续记录页之前的笔记。打开页面不会创建日记，首次记录时才创建。已有的标题、插入顺序和标签补全设置同样适用。记录列表沿用笔记中的顺序，保存后跳到新记录的位置。
-
-连续记录页支持手机，键盘弹出时输入区会调整高度。重复运行命令会回到已有页面；切换到其他标签页后仍可返回，关闭页面后未发送的草稿也会保留。可以把 **Sparkle: 连续记录** 设为手机下拉快捷操作或工具栏命令，一次打开后持续记录。
-
-### 更快的入口
-
-- **手机下拉手势**：在 Obsidian 的 **设置 → 界面 → 配置移动端快捷操作** 中，选择 **Sparkle: 快速记录灵感**。之后下拉即可输入，不需要进入底部菜单或侧栏。
-- **手机工具栏**：在 **设置 → 界面 → 配置移动端工具栏 → 添加命令** 中加入该命令，并拖到前面；编辑笔记时点击一次即可打开。
-- **桌面快捷键**：在 **设置 → 快捷键** 中搜索“快速记录灵感”，绑定自己习惯的组合键。插件不会占用默认快捷键。
-
-手机入口的设置方式见 [Obsidian 官方说明](https://obsidian.md/help/mobile)。移动端快速记录使用弹窗，不依赖侧边栏；输入框自动聚焦，弹窗随软键盘调整位置和高度。内容较多时输入区可滚动，底部工具栏保持可见。已验证模拟键盘覆盖、收起与横竖屏切换，实际设备表现仍需验证。
-
-运行 **Sparkle: 打开灵感面板**，可在侧边栏查看历史记录。显式打开面板时也会直接展开并聚焦输入区；保存后输入区保持打开，方便连续记录，仍可手动收起。
-
-### 界面语言
-
-支持简体中文和英文，自动跟随 Obsidian 的界面语言；中文语言代码使用简体中文，其他语言回退到英文。修改 Obsidian 语言并重启应用后生效，无需额外的翻译依赖。
-
-默认记录小节标题为“灵感”（中文）或 `Ideas`（英文）。已保存的标题、正文、标签和插入位置不随界面语言切换而改变。
-
-### 当前笔记
-
-先打开一本书、电影或项目对应的 Markdown 笔记，再打开 Sparkle，新记录就会写到该页面，无需选择文件。还没有开始输入时会跟随当前页面；开始输入后固定目标，避免中途切换页面误写。已有未完成草稿时，重新打开仍保留草稿的原目标；若要改写当前页面，直接点击 **当前笔记**，正文和标签会保留。
-
-文件重命名后会跟随更新；没有打开 Markdown 笔记或目标已删除时停止写入，并提示先打开笔记或切换日记模式，不会回退到上次使用的其他文件。
-
-### 今日日记
-
-请启用 Obsidian 核心 **日记 / Daily notes** 插件，或启用 Periodic Notes 的日记功能。Sparkle 使用 `obsidian-daily-notes-interface` 读取已有的目录、日期格式与模板设置；如果同时启用了 Periodic Notes 的日记功能，则采用其配置。
-
-打开面板或切换模式只预览目标，不创建文件。保存灵感或点击 **打开目标笔记** 时，今天的日记不存在则自动按模板创建，已存在则直接使用。日期格式中的子目录也会沿用。日记模式按点击保存时的本地日期写入，跨午夜后会转到新一天；当前笔记模式在本次输入期间保持固定。
-
-### 内容和标签
-
-支持多行 Markdown；标签可手动输入，也可以搜索选择 vault 中已有的标签。标签以空格或逗号分隔，支持 `#阅读/人物` 这样的层级标签。切换目标或收起编辑区不会清空草稿；正文、标签和目标模式保存在本地插件数据中。成功写入后清空草稿，写入失败则保留。
-
-在正文中输入 `#`，或在标签框里输入标签名称，会弹出已有标签候选。支持中文、英文和层级标签，优先匹配前缀；用 `↑` / `↓` 选择，`Enter` 或 `Tab` 补全，`Esc` 关闭，也可以直接点击候选。补全只替换光标所在的标签，标签框会排除其他位置已经选过的标签。没有匹配项时可继续输入新标签，`Ctrl / ⌘ + Enter` 仍用于保存。
-
-面板展示目标笔记“灵感”小节中的已有内容，并随该文件修改刷新。编辑、删除已有记录请使用笔记编辑器。
-
-### 图片
-
-三个记录入口都支持点击图片图标多选图片，也可粘贴或拖入图片。添加后显示缩略图，可移除不需要的图片；允许只发图片。关闭窗口、切换记录入口或写入失败都会保留图片草稿，成功记录后清空。
-
-默认目录相对目标笔记所在位置计算：
-
-| 写入模式 | 目标笔记示例         | 图片目录                  |
-| -------- | -------------------- | ------------------------- |
-| 当前笔记 | `读书/魔戒.md`       | `读书/assets/`            |
-| 今日日记 | `日记/2026-11-06.md` | `日记/assets/2026-11-06/` |
-
-在 **设置 → Sparkle** 分别修改 **笔记图片目录** 和 **日记图片目录**，编辑后点击 **应用目录**。默认值分别为 `assets` 和 `assets/{date}`；`{date}` 是本地的 `YYYY-MM-DD` 日期。以 `/` 开头表示 vault 根目录，如 `/附件/{date}`；`.` 表示笔记所在目录。日记采用自定义目录或嵌套日期格式时，也以实际日记所在目录为基准。
-
-选图时先将原图导入 vault，以保留草稿；保存时按最终目标、保存日期和当前目录设置归档，并生成遵循 Obsidian 链接设置的图片嵌入。因此切换写入目标或跨午夜保存也会使用对应目录。同名文件自动加序号。移除草稿中的图片只移除引用，已导入的文件可在 vault 中自行管理。
-
-支持 [Obsidian 的图片格式](https://help.obsidian.md/file-formats)：PNG、JPEG、GIF、WebP、SVG、BMP 和 AVIF。
-
-### 位置（Geotag）
-
-点击工具栏的定位图标，手机端可选择 **获取当前位置**，并按系统提示授权；桌面端可手动输入坐标。坐标按 **纬度, 经度** 填写，例如 `31.2304, 121.4737`，也接受 `geo:31.2304,121.4737`。可填写“公司”“咖啡馆”等名称，再点击 **附加位置**。附加后显示一行位置标签，点击可编辑，点击旁边的 × 可移除；也支持只记录位置。
-
-位置随每条灵感写入标准 Markdown 链接，如 `[📍 咖啡馆](geo:31.2304,121.4737)`，不会改写整篇笔记的属性。关闭记录入口或写入失败会保留草稿位置，成功发送后清除，下一条不会沿用。
-
-仅在点击 **获取当前位置** 时请求设备位置，不后台跟踪，不调用第三方地图或地址解析服务。获取失败、权限拒绝或超时后，可手动填写，或取消并照常记录。首版不解析地址、不读取图片 EXIF，也不内置地图。移动端定位权限、精度和实际定位效果仍需真机验证。
-
-### 记录设置
-
-在 **设置 → Sparkle**，或点击面板右上角的齿轮图标，可以配置：
-
-- **感想小节标题**：默认“灵感”，输入如“读书感想”后点击“应用标题”。无需输入 `##`；只接受非空的单行标题。
-- **插入位置**：选择“小节开头”（新记录在前）或“小节结尾”（新记录在后，默认）。位置指该小节内部，找不到标题时仍在文件末尾创建小节。
-- **图片目录**：分别设置当前笔记和今日日记的图片存储目录。
-
-两种写入模式共用标题和插入位置，图片目录分别设置。设置会保存在本地，并立即更新已打开面板的记录区域；输入中的草稿保留。更改标题不会重命名、移动历史内容，更改插入位置也不会重新排序旧记录。面板始终按笔记中的实际顺序展示内容。
-
-## 存储格式
-
-所有记录都是普通 Markdown 列表项，使用本地时间，精确到秒。**当前笔记**模式写入 `YYYY-MM-DD HH:mm:ss`，**今日日记**模式只写入 `HH:mm:ss`，界面按记录的时间格式展示。写入第一个匹配设置的二级标题下，按设置插入开头或结尾。默认追加到 **灵感** 小节；不存在则在文件末尾创建。后续同级或更高层级的小节保持原样。支持 ATX（如 `## 灵感`）和 Setext 二级标题。
-
-```markdown
-## 灵感
-
-- 2026-11-06 10:35:07 #阅读 #人物
-  这个人物的变化，前面几章已经有了铺垫。
-```
-
-今日日记中的新记录使用相同结构，首行如 `- 10:35:07 #阅读 #人物`。
-
-关闭或卸载插件后内容仍可阅读和编辑；检索与统计可以交给其他插件。笔记中存在未闭合的 YAML、围栏代码块或 HTML 注释时，先修复再写入。
-
-## 本地开发
-
-需要 Node.js 22.13+ 和 npm。请使用独立的开发 vault。
-
-```sh
-npm install
-npm run dev
-```
-
-`dev` 监听源码变化并生成根目录的 `main.js`。将 `main.js`、`manifest.json`、`styles.css` 复制到开发 vault 的 `.obsidian/plugins/sparkle/` 目录，在 Obsidian 第三方插件设置中启用 **Sparkle**。
-
-每次构建后重新复制文件并禁用、启用插件。修改 `manifest.json` 后需重启 Obsidian。
-
-```sh
-npm run lint
-npm run format:check
-npm run release:check
-npm test
-npm run build
-```
-
-`build` 执行 TypeScript 类型检查并生成压缩的 CommonJS 插件。Vitest 测试覆盖内容格式、标签校验、自定义标题、首尾插入、原文保留、设置恢复和日记目标解析；日记接口使用 mock，实际 Obsidian 集成仍需手动验证。
-
-`release:check` 校验包、锁文件、插件清单和版本映射是否一致。`npm test` 还会在临时 Git 仓库中验证版本同步、标签生成和版本不一致时的阻断行为。
-
-手动检查：当前笔记与日记两种模式、切换页面后开始新记录、已有/未创建的日记、自定义目录和模板、多行内容与标签、输入中目标固定、草稿恢复、文件重命名/删除，以及反复启用/禁用插件。移动端需在实际设备中验证。
-
-## 项目结构
-
-- `src/main.ts`：插件注册、面板入口和草稿持久化。
-- `src/views/`：侧边面板、笔记选择和标签选择。
-- `src/views/quick-capture.ts` / `src/views/sparkle-panel.ts`：快速记录弹窗及各入口共用的记录组件。
-- `src/views/capture-view.ts`：工作区中的连续记录页；`capture-viewport.ts` 处理键盘可用区域。
-- `src/notes.ts`：Markdown 格式、标签校验和小节写入。
-- `src/images.ts`：图片目录解析、导入、归档和嵌入格式。
-- `src/location.ts` / `src/views/location-modal.ts`：定位请求、坐标校验、位置链接及编辑弹窗。
-- `src/daily-notes.ts`：日记配置、目标解析和创建。
-- `src/settings.ts` / `src/state.ts`：设置页、快捷设置弹窗和数据恢复。
-- `src/i18n/`：中英文文案、参数插值及 Obsidian 语言检测；新增文案先添加到 `en.ts`，再补齐 `zh.ts` 的同名键和参数。
-- `src/tags.ts` / `src/tag-index.ts`：标签补全匹配、文本替换和 vault 标签缓存。
-- `tests/`：Vitest 单元测试与 Obsidian API mock。
-- `manifest.json` / `versions.json`：插件元数据和最低 Obsidian 版本。
-- `styles.css`：面板样式，跟随 Obsidian 主题。
-
-## 自动构建与发布
-
-GitHub Actions 在推送 `main`、提交 PR 或手动触发时执行版本校验、代码与格式检查、测试和生产构建，并保存 `main.js`、`manifest.json`、`styles.css` 构建产物。推送版本标签时，通过相同检查后自动创建 GitHub Release、生成发布说明并上传这三个文件。
-
-先提交要发布的代码和工作流配置，在干净的工作区设置新版本：
-
-```sh
-npm version 0.2.0
-git push origin main --follow-tags
-```
-
-也可以使用 `npm version patch`、`minor` 或 `major`。版本钩子会同步更新 `package.json`、`package-lock.json`、`manifest.json` 和 `versions.json`，创建版本提交和同名标签。标签采用 `0.2.0` 格式，与插件版本完全相同；项目的 `.npmrc` 已配置为空前缀。
-
-首次发布现有的 `0.1.0` 时，可直接创建标签并推送：
-
-```sh
-git tag 0.1.0
-git push origin main 0.1.0
-```
-
-发布任务使用 GitHub 自动提供的 `GITHUB_TOKEN`，只在发布任务中申请 `contents: write`，无需配置个人访问令牌。已发布版本在重跑时保留；失败后遗留的草稿会继续上传并发布。
+Place `main.js`, `manifest.json`, and `styles.css` in your vault's `.obsidian/plugins/sparkle/` folder, then enable Sparkle in Community plugins.
