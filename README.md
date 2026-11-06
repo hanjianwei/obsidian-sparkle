@@ -32,3 +32,7 @@ Use the toolbar to add images, locations, or tags. Type `#` for tag completion. 
 ## Installation
 
 Place `main.js`, `manifest.json`, and `styles.css` in your vault's `.obsidian/plugins/sparkle/` folder, then enable Sparkle in Community plugins.
+
+## License
+
+[MIT](LICENSE).

@@ -1,6 +1,7 @@
 {
 	"name": "obsidian-sparkle",
 	"version": "0.1.0",
+	"license": "MIT",
 	"private": true,
 	"description": "Capture ideas into your current note or daily note with quick or continuous capture.",
 	"type": "module",

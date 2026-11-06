@@ -32,3 +32,7 @@
 ## 安装
 
 将 `main.js`、`manifest.json` 和 `styles.css` 放入 vault 的 `.obsidian/plugins/sparkle/` 目录，然后在第三方插件中启用 Sparkle。
+
+## 许可证
+
+[MIT](LICENSE)。
