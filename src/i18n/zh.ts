@@ -24,6 +24,7 @@ export const zh = {
 	optionalTags: '标签（可选）',
 	tagsPlaceholder: '添加标签，空格分隔',
 	chooseTags: '选择已有标签',
+	tagSuggestions: '标签候选',
 	shortcut: 'Markdown · Ctrl / ⌘ ↵ 保存',
 	collapse: '收起',
 	saveIdea: '保存灵感',

@@ -1,5 +1,6 @@
 import { t } from '../i18n';
-import { App, FuzzySuggestModal, getAllTags, TFile } from 'obsidian';
+import { App, FuzzySuggestModal, TFile } from 'obsidian';
+import { collectVaultTags } from '../tag-index';
 
 export class FilePicker extends FuzzySuggestModal<TFile> {
 	constructor(
@@ -30,15 +31,11 @@ export class TagPicker extends FuzzySuggestModal<string> {
 	constructor(
 		app: App,
 		private readonly choose: (tag: string) => void,
+		tags: readonly string[] = collectVaultTags(app),
 	) {
 		super(app);
 		this.setPlaceholder(t('tagPickerPlaceholder'));
-		const tags = new Set<string>();
-		for (const file of app.vault.getMarkdownFiles()) {
-			const cache = app.metadataCache.getFileCache(file);
-			if (cache) for (const tag of getAllTags(cache) ?? []) tags.add(tag);
-		}
-		this.tags = [...tags].sort((a, b) => a.localeCompare(b));
+		this.tags = [...tags];
 		this.emptyStateText = t('tagPickerEmpty');
 	}
 

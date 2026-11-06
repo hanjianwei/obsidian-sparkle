@@ -13,6 +13,8 @@ import { SparkleSettingsModal } from '../settings';
 import { ensureTodayNote, getTodayTarget } from '../daily-notes';
 import { appendEntry, formatEntry, parseTags, readEntries } from '../notes';
 import { FilePicker, TagPicker } from './pickers';
+import { VaultTagIndex } from '../tag-index';
+import { TagSuggest } from './tag-suggest';
 
 export const VIEW_TYPE_SPARKLE = 'sparkle-panel';
 
@@ -42,6 +44,8 @@ export class SparkleView extends ItemView {
 	private refreshVersion = 0;
 	private rendered: Component | null = null;
 	private closed = false;
+	private tagIndex!: VaultTagIndex;
+	private tagSuggestions: TagSuggest[] = [];
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -64,6 +68,7 @@ export class SparkleView extends ItemView {
 
 	onOpen(): Promise<void> {
 		this.closed = false;
+		this.tagIndex = this.addChild(new VaultTagIndex(this.app));
 		const active = this.app.workspace.getActiveFile();
 		this.lastActiveFile = active?.extension === 'md' ? active : null;
 		const stored = this.app.vault.getAbstractFileByPath(
@@ -124,6 +129,9 @@ export class SparkleView extends ItemView {
 
 	onClose(): Promise<void> {
 		this.closed = true;
+		for (const suggestion of this.tagSuggestions) this.removeChild(suggestion);
+		this.tagSuggestions = [];
+		this.removeChild(this.tagIndex);
 		this.refreshVersion++;
 		if (this.rendered) this.removeChild(this.rendered);
 		this.rendered = null;
@@ -253,6 +261,14 @@ export class SparkleView extends ItemView {
 			this.plugin.draft.tags = this.tagsInput.value;
 			this.persist();
 		});
+		this.tagSuggestions = [
+			this.addChild(
+				new TagSuggest(this.editor, 'content', () => this.tagIndex.getTags()),
+			),
+			this.addChild(
+				new TagSuggest(this.tagsInput, 'tags', () => this.tagIndex.getTags()),
+			),
+		];
 		this.iconButton(tagsRow, 'tags', t('chooseTags'), () => this.chooseTag());
 		const footer = this.composer.createDiv({ cls: 'sparkle-composer-footer' });
 		footer.createSpan({
@@ -314,18 +330,23 @@ export class SparkleView extends ItemView {
 	}
 
 	private chooseTag(): void {
-		new TagPicker(this.app, (tag) => {
-			if (this.saving || this.closed) return;
-			try {
-				this.plugin.draft.tags = parseTags(
-					`${this.tagsInput.value} ${tag}`,
-				).join(' ');
-				this.tagsInput.value = this.plugin.draft.tags;
-				this.persist();
-			} catch (error) {
-				new Notice(error instanceof Error ? error.message : t('addTagError'));
-			}
-		}).open();
+		this.closeTagSuggestions();
+		new TagPicker(
+			this.app,
+			(tag) => {
+				if (this.saving || this.closed) return;
+				try {
+					this.plugin.draft.tags = parseTags(
+						`${this.tagsInput.value} ${tag}`,
+					).join(' ');
+					this.tagsInput.value = this.plugin.draft.tags;
+					this.persist();
+				} catch (error) {
+					new Notice(error instanceof Error ? error.message : t('addTagError'));
+				}
+			},
+			this.tagIndex.getTags(),
+		).open();
 	}
 
 	onSettingsChanged(): void {
@@ -421,6 +442,7 @@ export class SparkleView extends ItemView {
 	}
 
 	private updateComposer(): void {
+		if (!this.plugin.draft.expanded) this.closeTagSuggestions();
 		this.composer.hidden = !this.plugin.draft.expanded;
 		this.addButton.hidden = this.plugin.draft.expanded;
 		if (!this.plugin.draft.expanded) {
@@ -492,6 +514,7 @@ export class SparkleView extends ItemView {
 			return;
 		}
 		this.plugin.capturePending = true;
+		this.closeTagSuggestions();
 		this.saving = true;
 		this.controls.forEach((control) => {
 			control.disabled = true;
@@ -636,5 +659,9 @@ export class SparkleView extends ItemView {
 		setIcon(empty.createSpan({ cls: 'sparkle-empty-icon' }), 'sparkles');
 		empty.createEl('h4', { text: title, cls: 'sparkle-empty-title' });
 		empty.createEl('p', { text: description });
+	}
+
+	private closeTagSuggestions(): void {
+		for (const suggestion of this.tagSuggestions) suggestion.close();
 	}
 }

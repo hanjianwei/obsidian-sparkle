@@ -458,3 +458,52 @@
 	width: 100%;
 	max-width: 100%;
 }
+
+.sparkle-tag-suggestions {
+	position: fixed;
+	left: var(--sparkle-suggest-left);
+	top: var(--sparkle-suggest-top);
+	z-index: var(--layer-popover, 1000);
+	width: var(--sparkle-suggest-width);
+	max-height: var(--sparkle-suggest-height);
+	padding: 4px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-primary);
+	box-shadow: 0 4px 18px var(--background-modifier-box-shadow);
+}
+
+.sparkle-tag-suggestions[hidden] {
+	display: none;
+}
+
+.sparkle-tag-suggestions .sparkle-tag-option {
+	display: block;
+	width: 100%;
+	min-height: 36px;
+	padding: 8px 10px;
+	border: 0;
+	border-radius: 5px;
+	box-shadow: none;
+	background: transparent;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	text-align: start;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.sparkle-tag-suggestions .sparkle-tag-option:hover,
+.sparkle-tag-suggestions .sparkle-tag-option.is-selected {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+@media (pointer: coarse) {
+	.sparkle-tag-suggestions .sparkle-tag-option {
+		min-height: 44px;
+	}
+}

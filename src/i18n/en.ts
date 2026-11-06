@@ -22,6 +22,7 @@ export const en = {
 	optionalTags: 'Tags (optional)',
 	tagsPlaceholder: 'Add tags, separated by spaces',
 	chooseTags: 'Choose existing tags',
+	tagSuggestions: 'Tag suggestions',
 	shortcut: 'Markdown · Ctrl / ⌘ ↵ to save',
 	collapse: 'Collapse',
 	saveIdea: 'Save idea',

@@ -23,6 +23,8 @@ A missing section is created at the end of the file. Settings apply to both dest
 
 Ideas are stored as ordinary Markdown with local timestamps and tags. Edit existing entries in the note editor.
 
+Type `#` in the content field, or type a tag name in the tags field, to see existing tag suggestions. Chinese, English, and nested tags are supported, with prefix matches ranked first. Use `↑` / `↓` to navigate, `Enter` or `Tab` to complete, and `Esc` to dismiss, or click a suggestion. Completion replaces only the tag at the cursor. The tags field excludes tags already selected elsewhere in that field. You can still type new tags, and `Ctrl / ⌘ + Enter` saves the idea.
+
 ## Languages
 
 Sparkle follows Obsidian's interface language: Chinese language codes use Simplified Chinese; other languages use English. Restart Obsidian after changing its language.
