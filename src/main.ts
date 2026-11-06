@@ -122,12 +122,12 @@ export default class SparklePlugin extends Plugin {
 	private prepareCurrentNote(): void {
 		if (
 			this.capturePending ||
-			this.draft.mode !== 'file' ||
-			hasDraft(this.draft)
+			(this.draft.mode === 'file' && hasDraft(this.draft))
 		)
 			return;
 		const file = this.getCaptureFile();
 		this.draft.targetPath = file?.extension === 'md' ? file.path : '';
+		if (!this.draft.targetPath) this.draft.mode = 'daily';
 	}
 
 	getCaptureFile(): TFile | null {

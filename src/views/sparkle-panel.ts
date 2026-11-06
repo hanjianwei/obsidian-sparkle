@@ -16,6 +16,12 @@ import { hasDraft } from '../state';
 import { VaultTagIndex } from '../tag-index';
 import { TagSuggest } from './tag-suggest';
 import { appendInlineTags } from '../tags';
+import {
+	continueList,
+	formatList,
+	FormattedText,
+	ListStyle,
+} from '../formatting';
 import { locationCoordinates } from '../location';
 import { LocationModal } from './location-modal';
 import {
@@ -41,12 +47,8 @@ export class SparklePanel extends Component {
 	private dailyPath = '';
 	private dailyReady = false;
 	private modeButtons = new Map<'file' | 'daily', HTMLButtonElement>();
-	private targetName!: HTMLElement;
-	private settingsSummary!: HTMLElement;
 	private recordsTitle!: HTMLElement;
-	private draftBadge!: HTMLElement;
-	private targetHint!: HTMLElement;
-	private targetLabel!: HTMLElement;
+	private targetError!: HTMLElement;
 	private status!: HTMLElement;
 	private editor!: HTMLTextAreaElement;
 	private tagsInput: HTMLInputElement | null = null;
@@ -71,6 +73,9 @@ export class SparklePanel extends Component {
 	private streamFeed: HTMLElement | null = null;
 	private tagFocusFrame: number | null = null;
 	private statusTimer: number | null = null;
+	private composing = false;
+	private plainLineBreak = false;
+	private pendingLineBreak: FormattedText | null = null;
 	private get compact(): boolean {
 		return Boolean(this.options.quick || this.options.stream);
 	}
@@ -94,15 +99,14 @@ export class SparklePanel extends Component {
 		this.target =
 			stored instanceof TFile && stored.extension === 'md' ? stored : null;
 		this.fixedTarget = this.target;
-		if (this.plugin.draft.mode === 'file' && !hasDraft(this.plugin.draft))
+		if (this.plugin.draft.mode !== 'file' || !hasDraft(this.plugin.draft))
 			this.bindCurrentNote();
 		this.buildPanel();
 		this.persist();
 		this.registerEvent(
 			this.app.workspace.on('file-open', (file) => {
 				if (
-					this.plugin.draft.mode !== 'file' ||
-					hasDraft(this.plugin.draft) ||
+					(this.plugin.draft.mode === 'file' && hasDraft(this.plugin.draft)) ||
 					this.plugin.capturePending
 				)
 					return;
@@ -194,31 +198,14 @@ export class SparklePanel extends Component {
 		this.controls = [];
 		this.modeButtons.clear();
 
-		const header = root.createDiv({ cls: 'sparkle-header' });
-		header.hidden = Boolean(this.options.quick);
-		const brand = header.createDiv({ cls: 'sparkle-brand' });
-		setIcon(brand.createSpan({ cls: 'sparkle-brand-icon' }), 'sparkles');
-		const title = brand.createDiv();
-		title.createEl('h2', {
-			text: t(this.options.stream ? 'continuousCapture' : 'panelTitle'),
-			cls: 'sparkle-title',
-		});
-		title.createEl('p', {
-			text: t('subtitle'),
-			cls: 'sparkle-subtitle',
-		});
-		this.iconButton(header, 'settings-2', t('recordSettings'), () => {
-			new SparkleSettingsModal(this.app, this.plugin).open();
-		});
-
 		const targetBox = root.createDiv({ cls: 'sparkle-target' });
 		const modes = targetBox.createDiv({
 			cls: 'sparkle-modes',
 			attr: { role: 'group', 'aria-label': t('destinationMode') },
 		});
-		for (const [mode, label, icon] of [
-			['file', t('fileMode'), 'file-text'],
-			['daily', t('dailyMode'), 'calendar-days'],
+		for (const [mode, label, shortLabel, icon] of [
+			['file', t('fileMode'), t('fileModeShort'), 'file-text'],
+			['daily', t('dailyMode'), t('dailyModeShort'), 'calendar-days'],
 		] as const) {
 			const button = this.button(modes, '', () => {
 				if (this.plugin.capturePending) return;
@@ -231,27 +218,30 @@ export class SparklePanel extends Component {
 				if (this.options.quick || this.options.stream) this.focusEditor();
 			});
 			button.addClass('sparkle-mode');
+			button.setAttribute('aria-label', label);
+			button.setAttribute('title', label);
 			setIcon(button.createSpan({ cls: 'sparkle-button-icon' }), icon);
-			button.createSpan({ text: label });
+			button.createSpan({ text: shortLabel, cls: 'sparkle-mode-label' });
 			this.modeButtons.set(mode, button);
 		}
-		const destination = targetBox.createDiv({ cls: 'sparkle-destination' });
-		const fileInfo = destination.createDiv({ cls: 'sparkle-file-info' });
-		fileInfo.createSpan({ text: t('recordTo'), cls: 'sparkle-label' });
-		this.targetName = fileInfo.createDiv({ cls: 'sparkle-target-name' });
-		this.targetLabel = fileInfo.createDiv({ cls: 'sparkle-target-path' });
-		if (!this.options.quick)
-			this.iconButton(
-				destination,
-				'arrow-up-right',
-				t('openTarget'),
-				() => void this.openTarget(),
-			);
-
-		this.targetHint = targetBox.createEl('p', { cls: 'sparkle-hint' });
-		this.settingsSummary = targetBox.createDiv({
-			cls: 'sparkle-settings-summary',
+		const targetActions = targetBox.createDiv({
+			cls: 'sparkle-target-actions',
 		});
+		if (this.options.onContinuous)
+			this.iconButton(
+				targetActions,
+				'messages-square',
+				t('continuousCapture'),
+				this.options.onContinuous,
+			);
+		this.iconButton(targetActions, 'settings-2', t('recordSettings'), () => {
+			new SparkleSettingsModal(this.app, this.plugin).open();
+		});
+		this.targetError = root.createEl('p', {
+			cls: 'sparkle-target-error',
+			attr: { role: 'status', 'aria-live': 'polite' },
+		});
+		this.targetError.hidden = true;
 
 		this.addButton = this.button(root, '', () => {
 			this.plugin.draft.expanded = true;
@@ -263,17 +253,6 @@ export class SparklePanel extends Component {
 		this.addButton.createSpan({ text: t('addIdea') });
 
 		this.composer = root.createDiv({ cls: 'sparkle-composer' });
-		const composerHeader = this.composer.createDiv({
-			cls: 'sparkle-composer-header',
-		});
-		composerHeader.createEl('h3', {
-			text: t('composerTitle'),
-			cls: 'sparkle-composer-title',
-		});
-		this.draftBadge = composerHeader.createSpan({
-			text: t('draft'),
-			cls: 'sparkle-draft-badge',
-		});
 		const contentLabel = this.composer.createEl('label', {
 			cls: 'sparkle-field',
 		});
@@ -287,14 +266,67 @@ export class SparklePanel extends Component {
 		});
 		this.editor.value = this.plugin.draft.content;
 		this.registerDomEvent(this.editor, 'input', () => {
+			const continuation = this.pendingLineBreak;
+			this.pendingLineBreak = null;
 			if (this.options.stream && this.saving) {
 				this.editor.value = this.plugin.draft.content;
+				return;
+			}
+			if (continuation) {
+				this.applyFormatting(continuation);
 				return;
 			}
 			this.plugin.draft.content = this.editor.value;
 			this.clearSavedStatus();
 			this.updateSaveButton();
 			this.persist();
+		});
+		this.registerDomEvent(this.editor, 'compositionstart', () => {
+			this.composing = true;
+			this.pendingLineBreak = null;
+		});
+		this.registerDomEvent(this.editor, 'compositionend', () => {
+			this.composing = false;
+		});
+		this.registerDomEvent(this.editor, 'keydown', (event) => {
+			this.plainLineBreak =
+				event.key === 'Enter' &&
+				(event.shiftKey || event.altKey || event.ctrlKey || event.metaKey);
+		});
+		this.registerDomEvent(this.editor, 'keyup', (event) => {
+			if (event.key === 'Enter') this.plainLineBreak = false;
+		});
+		this.registerDomEvent(this.editor, 'beforeinput', (event) => {
+			const plain = this.plainLineBreak;
+			this.plainLineBreak = false;
+			this.pendingLineBreak = null;
+			if (this.options.stream && this.saving) {
+				event.preventDefault();
+				return;
+			}
+			if (
+				event.defaultPrevented ||
+				event.isComposing ||
+				this.composing ||
+				plain ||
+				this.saving ||
+				this.plugin.capturePending ||
+				!['insertLineBreak', 'insertParagraph'].includes(event.inputType)
+			)
+				return;
+			const continuation = continueList(
+				this.editor.value,
+				this.editor.selectionStart,
+				this.editor.selectionEnd,
+			);
+			if (!continuation) return;
+			if (event.cancelable) {
+				event.preventDefault();
+				this.applyFormatting(continuation);
+			} else {
+				// Some mobile keyboards insert the newline before the input event.
+				this.pendingLineBreak = continuation;
+			}
 		});
 		this.registerDomEvent(this.editor, 'paste', (event) => {
 			const files = Array.from(event.clipboardData?.files ?? []);
@@ -348,11 +380,6 @@ export class SparklePanel extends Component {
 				new TagSuggest(this.editor, 'content', () => this.tagIndex.getTags()),
 			),
 		];
-		if (this.options.stream) {
-			this.registerDomEvent(this.editor, 'beforeinput', (event) => {
-				if (this.saving) event.preventDefault();
-			});
-		}
 		if (!compact) {
 			const tagsRow = this.composer.createDiv({ cls: 'sparkle-tags-row' });
 			const tagsLabel = tagsRow.createEl('label', {
@@ -380,6 +407,23 @@ export class SparklePanel extends Component {
 		const footer = (this.options.actionContainer ?? this.composer).createDiv({
 			cls: 'sparkle-composer-footer',
 		});
+		const tools = footer.createDiv({ cls: 'sparkle-tools' });
+		for (const [style, icon, label] of [
+			['list', 'list', t('toggleList')],
+			['task', 'list-todo', t('toggleTask')],
+		] as const) {
+			const button = this.iconButton(tools, icon, label, () =>
+				this.formatSelection(style),
+			);
+			this.registerDomEvent(button, 'pointerdown', (event) => {
+				if (event.button === 0) {
+					event.preventDefault();
+					this.editor.focus({ preventScroll: true });
+				}
+			});
+		}
+		if (compact)
+			this.iconButton(tools, 'tags', t('chooseTags'), () => this.chooseTag());
 		this.imageInput = root.createEl('input', {
 			type: 'file',
 			attr: { accept: IMAGE_ACCEPT, multiple: '', tabindex: '-1' },
@@ -390,7 +434,7 @@ export class SparklePanel extends Component {
 			if (files.length) void this.addImages(files);
 		});
 		this.imageButton = this.iconButton(
-			footer,
+			tools,
 			'image-plus',
 			t('addImages'),
 			() => {
@@ -399,25 +443,16 @@ export class SparklePanel extends Component {
 			},
 		);
 		this.locationButton = this.iconButton(
-			footer,
+			tools,
 			'map-pin',
 			t('addLocation'),
 			() => this.chooseLocation(),
 		);
-		if (compact)
-			this.iconButton(footer, 'tags', t('chooseTags'), () => this.chooseTag());
-		else
+		if (!compact)
 			footer.createSpan({
 				text: t('shortcut'),
 				cls: 'sparkle-shortcut',
 			});
-		if (this.options.onContinuous)
-			this.iconButton(
-				footer,
-				'messages-square',
-				t('continuousCapture'),
-				this.options.onContinuous,
-			);
 		const actions = footer.createDiv({ cls: 'sparkle-actions' });
 		if (!compact)
 			this.button(actions, t('collapse'), () => {
@@ -480,7 +515,7 @@ export class SparklePanel extends Component {
 			root.append(this.composer, this.streamFeed);
 		}
 		if (compact) footer.insertBefore(this.status, actions);
-		this.updateSettingsSummary();
+		this.updateRecordsTitle();
 		this.updateTarget();
 		this.updateComposer();
 		this.renderImages();
@@ -598,6 +633,29 @@ export class SparklePanel extends Component {
 		).open();
 	}
 
+	private formatSelection(style: ListStyle): void {
+		if (this.closed || this.saving || this.plugin.capturePending) return;
+		this.applyFormatting(
+			formatList(
+				this.editor.value,
+				this.editor.selectionStart,
+				this.editor.selectionEnd,
+				style,
+			),
+		);
+	}
+
+	private applyFormatting(result: FormattedText): void {
+		this.closeTagSuggestions();
+		this.editor.setRangeText(result.text, 0, this.editor.value.length);
+		this.editor.focus({ preventScroll: true });
+		this.editor.setSelectionRange(result.start, result.end);
+		this.plugin.draft.content = this.editor.value;
+		this.clearSavedStatus();
+		this.updateSaveButton();
+		this.persist();
+	}
+
 	focusEditor(): void {
 		if (this.closed) return;
 		this.plugin.draft.expanded = true;
@@ -615,7 +673,7 @@ export class SparklePanel extends Component {
 		);
 		this.fixedTarget =
 			file instanceof TFile && file.extension === 'md' ? file : null;
-		if (this.plugin.draft.mode === 'file' && !hasDraft(this.plugin.draft))
+		if (this.plugin.draft.mode !== 'file' || !hasDraft(this.plugin.draft))
 			this.bindCurrentNote();
 		this.editor.value = this.plugin.draft.content;
 		if (this.tagsInput) this.tagsInput.value = this.plugin.draft.tags;
@@ -663,19 +721,12 @@ export class SparklePanel extends Component {
 
 	onSettingsChanged(): void {
 		if (this.closed) return;
-		this.updateSettingsSummary();
+		this.updateRecordsTitle();
 		void this.refreshRecords();
 	}
 
-	private updateSettingsSummary(): void {
-		const { heading, insertionPosition } = this.plugin.settings;
-		this.settingsSummary.setText(
-			t('settingsSummary', {
-				heading,
-				order: insertionPosition === 'start' ? t('orderStart') : t('orderEnd'),
-			}),
-		);
-		this.recordsTitle.setText(heading);
+	private updateRecordsTitle(): void {
+		this.recordsTitle.setText(this.plugin.settings.heading);
 	}
 
 	private button(
@@ -707,31 +758,36 @@ export class SparklePanel extends Component {
 	}
 
 	private updateTarget(): void {
+		const fileButton = this.modeButtons.get('file');
+		if (fileButton) fileButton.hidden = !this.fixedTarget;
+		if (
+			!this.fixedTarget &&
+			this.plugin.draft.mode === 'file' &&
+			!this.plugin.capturePending
+		) {
+			this.plugin.draft.mode = 'daily';
+			this.persist();
+		}
 		const daily = this.plugin.draft.mode === 'daily';
 		for (const [mode, button] of this.modeButtons) {
 			const selected = mode === this.plugin.draft.mode;
 			button.setAttribute('aria-pressed', String(selected));
 			button.toggleClass('is-active', selected);
 		}
-		this.targetHint.setText(daily ? t('dailyHint') : t('fixedTargetHint'));
 		if (daily) {
 			try {
 				const target = getTodayTarget(this.app, new Date());
-				this.targetName.setText(
-					target.path.split('/').pop()?.replace(/\.md$/, '') ?? t('dailyMode'),
-				);
 				this.dailyPath = target.path;
 				this.target = target.file;
 				this.dailyReady = true;
-				this.setTargetLabel(
+				this.updateInputHint(
 					target.file ? target.path : t('createOnSave', { path: target.path }),
 					target.path,
 				);
 			} catch (error) {
 				this.target = null;
-				this.targetName.setText(t('dailyUnavailable'));
 				this.dailyReady = false;
-				this.setTargetLabel(
+				this.updateInputHint(
 					error instanceof Error ? error.message : t('readDailySettingsError'),
 				);
 			}
@@ -739,8 +795,7 @@ export class SparklePanel extends Component {
 			return;
 		}
 		this.target = this.fixedTarget;
-		this.targetName.setText(this.target?.basename ?? t('noCurrentNote'));
-		this.setTargetLabel(
+		this.updateInputHint(
 			this.target?.path ??
 				(this.plugin.draft.targetPath
 					? t('unavailablePath', { path: this.plugin.draft.targetPath })
@@ -750,14 +805,21 @@ export class SparklePanel extends Component {
 		this.updateSaveButton();
 	}
 
-	private setTargetLabel(label: string, path?: string): void {
-		this.targetLabel.setText(
-			this.options.quick && path
-				? (path.split('/').pop()?.replace(/\.md$/u, '') ?? path)
-				: label,
+	private updateInputHint(description: string, path?: string): void {
+		this.editor.placeholder =
+			this.plugin.draft.mode === 'daily'
+				? t('contentPlaceholder')
+				: t('noteContentPlaceholder', {
+						note: this.target?.basename ?? t('fileModeShort'),
+					});
+		const destination = path ? t('quickDestination', { path }) : description;
+		this.editor.setAttribute('title', destination);
+		this.editor.setAttribute(
+			'aria-label',
+			`${t('ideaContent')} · ${destination}`,
 		);
-		this.targetLabel.setAttribute('title', path ?? label);
-		this.targetLabel.toggleClass('is-error', !path);
+		this.targetError.setText(path ? '' : description);
+		this.targetError.hidden = Boolean(path);
 	}
 
 	private updateComposer(): void {
@@ -782,7 +844,6 @@ export class SparklePanel extends Component {
 		this.controls.forEach((control) => {
 			control.disabled = busy;
 		});
-		this.draftBadge.hidden = !hasDraft(this.plugin.draft);
 		this.imageButton.disabled =
 			this.saving ||
 			this.plugin.capturePending ||
@@ -922,26 +983,6 @@ export class SparklePanel extends Component {
 		this.updateTarget();
 		if (previous !== this.target || previousPath !== this.dailyPath)
 			void this.refreshRecords();
-	}
-
-	private async openTarget(): Promise<void> {
-		try {
-			const file =
-				this.plugin.draft.mode === 'daily'
-					? await ensureTodayNote(this.app, new Date())
-					: this.target;
-			if (!file) {
-				new Notice(t('chooseNoteFirst'));
-				return;
-			}
-			await this.app.workspace.getLeaf(false).openFile(file);
-			if (!this.closed) {
-				this.updateTarget();
-				await this.refreshRecords();
-			}
-		} catch (error) {
-			new Notice(error instanceof Error ? error.message : t('openTargetError'));
-		}
 	}
 
 	private persist(): void {

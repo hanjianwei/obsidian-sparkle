@@ -153,20 +153,40 @@ describe('快速记录入口', () => {
 		expect(plugin.draft.content).toBe('原笔记的草稿');
 	});
 	it.each([null, { path: '附件.pdf', extension: 'pdf' }])(
-		'没有当前 Markdown 笔记时不回退到上次的文件 %j',
+		'没有当前 Markdown 笔记时使用日记，不回退到上次的文件 %j',
 		async (active) => {
 			const { plugin, workspace } = await setup();
 			plugin.draft.targetPath = '上次的笔记.md';
 			workspace.getActiveFile.mockReturnValue(active);
 			plugin.openQuickCapture();
 			expect(plugin.draft.targetPath).toBe('');
+			expect(plugin.draft.mode).toBe('daily');
 		},
 	);
+	it('关闭当前笔记后，未发送的笔记草稿仍保留原来的记录对象', async () => {
+		const { plugin, workspace, file } = await setup();
+		plugin.draft.targetPath = file.path;
+		plugin.draft.content = '这篇笔记的草稿';
+		workspace.getActiveFile.mockReturnValue(null);
+		plugin.openQuickCapture();
+		expect(plugin.draft.mode).toBe('file');
+		expect(plugin.draft.targetPath).toBe(file.path);
+		expect(plugin.draft.content).toBe('这篇笔记的草稿');
+	});
 	it('打开日记模式时保持日记模式，不受当前笔记影响', async () => {
 		const { plugin } = await setup();
 		plugin.draft.mode = 'daily';
 		plugin.openQuickCapture();
 		expect(plugin.draft.mode).toBe('daily');
+	});
+	it('日记草稿可绑定当前笔记作为切换选项，内容和日记模式保持不变', async () => {
+		const { plugin, file } = await setup();
+		plugin.draft.mode = 'daily';
+		plugin.draft.content = '今天的新想法';
+		plugin.openQuickCapture();
+		expect(plugin.draft.targetPath).toBe(file.path);
+		expect(plugin.draft.mode).toBe('daily');
+		expect(plugin.draft.content).toBe('今天的新想法');
 	});
 	it('反复触发只聚焦同一个窗口，保留已有草稿', async () => {
 		const { plugin } = await setup();
@@ -238,29 +258,34 @@ describe('连续记录页面', () => {
 		finish();
 		await Promise.all([first, second]);
 	});
-	it('在普通标签页打开，并在切换前绑定当前笔记', async () => {
-		const { plugin, workspace, file } = await setup();
-		const view = new CaptureView({} as WorkspaceLeaf, plugin);
-		const focus = vi.spyOn(view, 'focusCapture');
-		const leaf = {
-			view,
-			setViewState: vi.fn().mockImplementation(() => {
-				workspace.getActiveFile.mockReturnValue(null);
-				workspace.getActiveViewOfType.mockReturnValue(view);
-				return Promise.resolve();
-			}),
-		};
-		workspace.getLeaf.mockReturnValue(leaf);
-		await plugin.openContinuousCapture();
-		expect(workspace.getLeaf).toHaveBeenCalledWith('tab');
-		expect(workspace.getRightLeaf).not.toHaveBeenCalled();
-		expect(leaf.setViewState).toHaveBeenCalledWith({
-			type: 'sparkle-capture',
-			active: true,
-		});
-		expect(plugin.getCaptureFile()).toBe(file);
-		expect(focus).toHaveBeenCalledOnce();
-	});
+	it.each(['file', 'daily'] as const)(
+		'从 %s 模式打开连续记录时，保留切换前的当前笔记',
+		async (mode) => {
+			const { plugin, workspace, file } = await setup();
+			plugin.draft.mode = mode;
+			const view = new CaptureView({} as WorkspaceLeaf, plugin);
+			const focus = vi.spyOn(view, 'focusCapture');
+			const leaf = {
+				view,
+				setViewState: vi.fn().mockImplementation(() => {
+					workspace.getActiveFile.mockReturnValue(null);
+					workspace.getActiveViewOfType.mockReturnValue(view);
+					return Promise.resolve();
+				}),
+			};
+			workspace.getLeaf.mockReturnValue(leaf);
+			await plugin.openContinuousCapture();
+			expect(workspace.getLeaf).toHaveBeenCalledWith('tab');
+			expect(workspace.getRightLeaf).not.toHaveBeenCalled();
+			expect(leaf.setViewState).toHaveBeenCalledWith({
+				type: 'sparkle-capture',
+				active: true,
+			});
+			expect(plugin.getCaptureFile()).toBe(file);
+			expect(plugin.draft.mode).toBe(mode);
+			expect(focus).toHaveBeenCalledOnce();
+		},
+	);
 	it('重复打开回到已有页面，并保留当前笔记目标和草稿', async () => {
 		const { plugin, workspace, file } = await setup();
 		const view = new CaptureView({} as WorkspaceLeaf, plugin);
