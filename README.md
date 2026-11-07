@@ -4,6 +4,8 @@ English · [简体中文](README.cn.md)
 
 A lightweight Obsidian plugin for capturing ideas into your current note or daily note. Requires Obsidian 1.13.0 or later.
 
+Explore the [demo vault](https://github.com/hanjianwei/sparkle-demo) for examples of capture, filtering, statistics, and maps.
+
 ## Features
 
 - Quick capture dialog, continuous capture tab, and persistent sidebar.
@@ -26,6 +28,8 @@ A lightweight Obsidian plugin for capturing ideas into your current note or dail
 1. Run **Sparkle: Quick capture** or **Sparkle: Continuous capture**.
 2. Choose **Current note** or **Daily note**, then write your idea.
 3. Select **Capture** or press `Ctrl / ⌘ + Enter`.
+
+On mobile, set **Settings → Mobile → Quick action** to **Sparkle: Quick capture**. Swipe down in a note to open the capture dialog.
 
 Use the toolbar to add images, locations, or tags. Type `#` for tag completion. **Settings → Sparkle** saves changes automatically and includes **Restore defaults**. Daily capture requires Daily notes or Periodic Notes.
 
