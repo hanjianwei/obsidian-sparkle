@@ -18,6 +18,7 @@ export default class SparklePlugin extends Plugin {
 	settings = loadPluginData(null).settings;
 	private saveRequested = false;
 	private savePromise: Promise<void> | null = null;
+	private savedData = '';
 	private quickCapture: QuickCaptureModal | null = null;
 	private captureOpening: Promise<void> | null = null;
 
@@ -26,6 +27,7 @@ export default class SparklePlugin extends Plugin {
 		const data = loadPluginData(await this.loadData());
 		this.draft = data.draft;
 		this.settings = data.settings;
+		this.savedData = JSON.stringify(this.dataToSave());
 		this.addSettingTab(new SparkleSettingTab(this.app, this));
 
 		this.registerView(VIEW_TYPE_SPARKLE, (leaf) => new SparkleView(leaf, this));
@@ -187,12 +189,26 @@ export default class SparklePlugin extends Plugin {
 	private async writeDraft(): Promise<void> {
 		do {
 			this.saveRequested = false;
-			await this.saveData({
-				...this.draft,
-				images: [...this.draft.images],
-				location: this.draft.location ? { ...this.draft.location } : null,
-				settings: { ...this.settings },
-			});
+			const data = this.dataToSave();
+			const serialized = JSON.stringify(data);
+			if (serialized !== this.savedData) {
+				await this.saveData(data);
+				this.savedData = serialized;
+			}
 		} while (this.saveRequested);
+	}
+
+	private dataToSave() {
+		return {
+			...this.draft,
+			targetPath:
+				this.draft.mode === 'file' && hasDraft(this.draft)
+					? this.draft.targetPath
+					: '',
+			expanded: false,
+			images: [...this.draft.images],
+			location: this.draft.location ? { ...this.draft.location } : null,
+			settings: { ...this.settings },
+		};
 	}
 }

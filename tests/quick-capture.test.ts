@@ -118,6 +118,27 @@ beforeEach(() => {
 });
 
 describe('快速记录入口', () => {
+	it('日记模式切换当前笔记时不保存临时路径，笔记草稿仍保存目标', async () => {
+		const { plugin } = await setup();
+		const saveData = vi.spyOn(plugin, 'saveData');
+		plugin.draft.mode = 'daily';
+		await plugin.persistDraft();
+		saveData.mockClear();
+		plugin.draft.targetPath = '日记/今天.md';
+		plugin.draft.expanded = true;
+		await plugin.persistDraft();
+		expect(saveData).not.toHaveBeenCalled();
+		plugin.draft.content = '尚未完成';
+		await plugin.persistDraft();
+		expect(saveData).toHaveBeenLastCalledWith(
+			expect.objectContaining({ targetPath: '', content: '尚未完成' }),
+		);
+		plugin.draft.mode = 'file';
+		await plugin.persistDraft();
+		expect(saveData).toHaveBeenLastCalledWith(
+			expect.objectContaining({ targetPath: '日记/今天.md' }),
+		);
+	});
 	it('新增独立命令并让星光按钮直达输入，不需要打开侧栏', async () => {
 		const { workspace } = await setup();
 		expect(ui.commands.has('quick-capture')).toBe(true);
